@@ -41,14 +41,20 @@ private enum SortMode: String, CaseIterable, Identifiable {
 
 struct CollectionView: View {
     @Query private var sightings: [SightingRecord]
+    @AppStorage("favoriteGokiIds") private var favoriteGokiCSV = ""
     @State private var selected: GokiKind?
     @State private var rarityFilter: RarityFilter = .all
     @State private var caughtFilter: CaughtFilter = .all
     @State private var sortMode: SortMode = .standard
+    @State private var favoritesOnly = false
     private let kinds = GokiLoader.loadAll()
 
     private var caughtCounts: [String: Int] {
         Dictionary(grouping: sightings, by: \.gokiId).mapValues(\.count)
+    }
+
+    private var favoriteIds: Set<String> {
+        Favorites.parse(favoriteGokiCSV)
     }
 
     private var displayedKinds: [GokiKind] {
@@ -69,7 +75,8 @@ struct CollectionView: View {
                 case .uncaught: return count == 0
                 }
             }()
-            return passesRarity && passesCaught
+            let passesFav = !favoritesOnly || favoriteIds.contains(kind.id)
+            return passesRarity && passesCaught && passesFav
         }
         switch sortMode {
         case .standard: break
@@ -102,7 +109,11 @@ struct CollectionView: View {
                         Button {
                             if count > 0 { selected = kind }
                         } label: {
-                            CollectionCard(kind: kind, caughtCount: count)
+                            CollectionCard(
+                                kind: kind,
+                                caughtCount: count,
+                                isFavorite: favoriteIds.contains(kind.id)
+                            )
                         }
                         .buttonStyle(.plain)
                         .disabled(count == 0)
@@ -114,6 +125,7 @@ struct CollectionView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        Toggle("お気に入りのみ", isOn: $favoritesOnly)
                         Picker("レア度", selection: $rarityFilter) {
                             ForEach(RarityFilter.allCases) { r in
                                 Text(r.label).tag(r)
@@ -144,18 +156,27 @@ struct CollectionView: View {
 private struct CollectionCard: View {
     let kind: GokiKind
     let caughtCount: Int
+    let isFavorite: Bool
 
     private var isCaught: Bool { caughtCount > 0 }
 
     var body: some View {
         VStack(spacing: 6) {
-            Group {
-                if isCaught {
-                    GokiVisual(kind: kind, size: 56)
-                } else {
-                    Text("？")
-                        .font(.system(size: 48))
-                        .opacity(0.25)
+            ZStack(alignment: .topTrailing) {
+                Group {
+                    if isCaught {
+                        GokiVisual(kind: kind, size: 56)
+                    } else {
+                        Text("？")
+                            .font(.system(size: 48))
+                            .opacity(0.25)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                if isFavorite && isCaught {
+                    Image(systemName: "star.fill")
+                        .font(.caption)
+                        .foregroundStyle(.yellow)
                 }
             }
             .frame(height: 60)

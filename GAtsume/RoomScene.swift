@@ -141,9 +141,23 @@ final class RoomScene: SKScene {
     private func startSpawning() {
         spawnTimer?.invalidate()
         spawnTimer = Timer.scheduledTimer(withTimeInterval: spawnInterval, repeats: true) { [weak self] _ in
-            self?.spawnRandomGoki()
+            self?.spawnPulse()
         }
-        spawnRandomGoki()
+        spawnPulse()
+    }
+
+    private func spawnPulse() {
+        let r = Double.random(in: 0..<1)
+        let count: Int = r < 0.7 ? 1 : (r < 0.95 ? 2 : 3)
+        for i in 0..<count {
+            let delay = TimeInterval(i) * 0.4
+            run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.run { [weak self] in
+                    self?.spawnRandomGoki()
+                }
+            ]))
+        }
     }
 
     private func spawnRandomGoki() {

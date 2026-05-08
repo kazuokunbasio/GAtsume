@@ -92,6 +92,9 @@ struct HomeView: View {
                     if let title = Titles.currentTitle(achievementCtx) {
                         titleBadge(title)
                     }
+                    if !seasonalKinds.isEmpty {
+                        seasonalBanner
+                    }
                     if let login = dailyLogins.first, login.lastClaimDate == DailyKey.today() {
                         loginBanner(streak: login.streak)
                     }
@@ -143,6 +146,36 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
+    }
+
+    private var seasonalKinds: [GokiKind] {
+        let m = Calendar.current.component(.month, from: .now)
+        return allKinds.filter { kind in
+            guard let months = kind.availableMonths else { return false }
+            return months.contains(m)
+        }
+    }
+
+    private var seasonalBanner: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                ForEach(seasonalKinds.prefix(4)) { k in
+                    GokiVisual(kind: k, size: 32)
+                }
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("今月の限定")
+                    .font(.caption.bold())
+                    .foregroundStyle(.pink)
+                Text("\(seasonalKinds.count)種が出現中")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.pink.opacity(0.12), in: .rect(cornerRadius: 12))
     }
 
     private func titleBadge(_ title: GameTitle) -> some View {

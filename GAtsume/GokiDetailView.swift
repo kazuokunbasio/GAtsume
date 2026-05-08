@@ -5,8 +5,17 @@ struct GokiDetailView: View {
     let kind: GokiKind
     @Environment(\.dismiss) private var dismiss
     @Query private var sightings: [SightingRecord]
+    @AppStorage("favoriteGokiIds") private var favoriteGokiCSV = ""
 
     @State private var renderedShareImage: Image?
+
+    private var isFavorite: Bool {
+        Favorites.parse(favoriteGokiCSV).contains(kind.id)
+    }
+
+    private func toggleFavorite() {
+        favoriteGokiCSV = Favorites.toggle(kind.id, in: favoriteGokiCSV)
+    }
 
     private var matching: [SightingRecord] {
         sightings
@@ -52,6 +61,12 @@ struct GokiDetailView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: toggleFavorite) {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                            .foregroundStyle(isFavorite ? .yellow : .secondary)
+                    }
+                }
                 ToolbarItem(placement: .topBarLeading) {
                     if let img = renderedShareImage {
                         ShareLink(
