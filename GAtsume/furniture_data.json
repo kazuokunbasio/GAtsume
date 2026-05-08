@@ -1,0 +1,33 @@
+{
+  "furniture": [
+    {
+      "id": "old_fridge",
+      "name": "古い冷蔵庫",
+      "emoji": "🧊",
+      "description": "ノーマル系が集まりやすい。",
+      "boosts": {
+        "kuromame": 3.0,
+        "chabane": 3.0
+      }
+    },
+    {
+      "id": "neon_light",
+      "name": "ネオンライト",
+      "emoji": "💡",
+      "description": "サイバー系を呼び寄せる。",
+      "boosts": {
+        "uchu_g": 5.0
+      }
+    },
+    {
+      "id": "wood_box",
+      "name": "木箱",
+      "emoji": "📦",
+      "description": "森林系の隠れ家になる。",
+      "boosts": {
+        "mori_g": 5.0,
+        "kitchen_runner": 1.5
+      }
+    }
+  ]
+}

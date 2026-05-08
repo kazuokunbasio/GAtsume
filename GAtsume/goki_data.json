@@ -1,0 +1,49 @@
+{
+  "goki": [
+    {
+      "id": "kuromame",
+      "name": "クロマメG",
+      "rarity": "normal",
+      "description": "暗所を好む。実はクラシック音楽が好き。",
+      "favoriteFood": "黒糖",
+      "spawnWeight": 5.0,
+      "emoji": "🫘"
+    },
+    {
+      "id": "chabane",
+      "name": "チャバネちゃん",
+      "rarity": "normal",
+      "description": "明るい場所が苦手。歌うとよく出てくる。",
+      "favoriteFood": "パンくず",
+      "spawnWeight": 4.0,
+      "emoji": "🟤"
+    },
+    {
+      "id": "kitchen_runner",
+      "name": "キッチンランナー",
+      "rarity": "rare",
+      "description": "走るのが得意。世界陸上に出るのが夢。",
+      "favoriteFood": "オリーブオイル",
+      "spawnWeight": 1.0,
+      "emoji": "🐛"
+    },
+    {
+      "id": "uchu_g",
+      "name": "宇宙G",
+      "rarity": "rare",
+      "description": "電波の隙間から現れる。Wi-Fiが好物。",
+      "favoriteFood": "電波",
+      "spawnWeight": 0.3,
+      "emoji": "🟣"
+    },
+    {
+      "id": "mori_g",
+      "name": "森のG",
+      "rarity": "rare",
+      "description": "湿った場所が好き。落ち葉を主食にしている。",
+      "favoriteFood": "落ち葉",
+      "spawnWeight": 0.3,
+      "emoji": "🟢"
+    }
+  ]
+}
