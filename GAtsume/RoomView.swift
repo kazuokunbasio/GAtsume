@@ -16,6 +16,7 @@ struct RoomView: View {
     @State private var now: Date = .now
     @State private var combo: Int = 0
     @State private var comboExpiresAt: Date?
+    @State private var flashColor: Color?
 
     private let comboWindow: TimeInterval = 3.0
 
@@ -72,6 +73,13 @@ struct RoomView: View {
         ZStack(alignment: .top) {
             SpriteView(scene: scene)
                 .ignoresSafeArea(edges: .top)
+
+            if let color = flashColor {
+                Rectangle()
+                    .fill(color)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
 
             HStack {
                 if let bait = activeBaitKind, let expiresAt = activeBaitExpiresAt {
@@ -154,9 +162,24 @@ struct RoomView: View {
         case .rare: Sounds.catchRare()
         case .superRare: Sounds.catchSuperRare()
         }
+        flash(for: kind.rarity)
         DailyMissions.record(.catchGoki(kind.rarity), modelContext: modelContext)
         DailyMissions.record(.earnCoins(reward), modelContext: modelContext)
         showToast(kind, reward: reward)
+    }
+
+    private func flash(for rarity: Rarity) {
+        let color: Color?
+        switch rarity {
+        case .normal: color = nil
+        case .rare: color = .white.opacity(0.25)
+        case .superRare: color = .yellow.opacity(0.45)
+        }
+        guard let c = color else { return }
+        withAnimation(.easeOut(duration: 0.05)) { flashColor = c }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeIn(duration: 0.5)) { flashColor = nil }
+        }
     }
 
     private func handleFurnitureMove(id: String, fraction: CGPoint) {

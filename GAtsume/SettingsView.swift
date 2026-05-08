@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var showResetConfirm = false
     @State private var showRestoreAlert = false
     @State private var showRemoveAdsAlert = false
+    @State private var showPrivacy = false
     @State private var exportURL: URL?
 
     var body: some View {
@@ -91,6 +92,12 @@ struct SettingsView: View {
                 }
 
                 Section("情報") {
+                    Button {
+                        showPrivacy = true
+                    } label: {
+                        Label("プライバシーポリシー", systemImage: "hand.raised.fill")
+                            .foregroundStyle(.primary)
+                    }
                     HStack {
                         Text("バージョン")
                         Spacer()
@@ -121,6 +128,9 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("広告削除は次のアップデートで対応予定です。")
+            }
+            .sheet(isPresented: $showPrivacy) {
+                PrivacyPolicyView()
             }
         }
     }

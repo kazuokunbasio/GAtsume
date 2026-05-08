@@ -19,6 +19,7 @@ final class RoomScene: SKScene {
     private let floorHeight: CGFloat = 140
     private weak var floorNode: SKShapeNode?
     private weak var draggingNode: SKNode?
+    private weak var bgImageNode: SKSpriteNode?
 
     override func didMove(to view: SKView) {
         scaleMode = .resizeFill
@@ -41,12 +42,27 @@ final class RoomScene: SKScene {
         let bg = wallpaper?.bgColor ?? [0.20, 0.18, 0.20]
         let fl = wallpaper?.floorColor ?? [0.30, 0.23, 0.18]
 
+        bgImageNode?.removeFromParent()
+        bgImageNode = nil
+
         backgroundColor = SKColor(
             red: CGFloat(bg[0] * darken),
             green: CGFloat(bg[1] * darken),
             blue: CGFloat(bg[2] * darken),
             alpha: 1.0
         )
+
+        if let imgName = wallpaper?.bgImage, UIImage(named: imgName) != nil {
+            let texture = SKTexture(imageNamed: imgName)
+            let sprite = SKSpriteNode(texture: texture, size: CGSize(width: size.width, height: size.height))
+            sprite.position = CGPoint(x: size.width / 2, y: size.height / 2)
+            sprite.zPosition = -2
+            sprite.colorBlendFactor = isNight ? 0.4 : 0
+            sprite.color = .black
+            addChild(sprite)
+            bgImageNode = sprite
+        }
+
         floorNode?.fillColor = SKColor(
             red: CGFloat(fl[0] * darken),
             green: CGFloat(fl[1] * darken),
@@ -205,7 +221,7 @@ final class RoomScene: SKScene {
         for node in nodes(at: location) {
             guard let id = node.name, !id.hasPrefix("_") else { continue }
             onCatch?(id)
-            catchAnimation(node: node)
+            catchAnimation(node: node, kindId: id)
             return
         }
     }
@@ -241,10 +257,70 @@ final class RoomScene: SKScene {
         draggingNode = nil
     }
 
-    private func catchAnimation(node: SKNode) {
+    private func catchAnimation(node: SKNode, kindId: String) {
+        let position = node.position
+        let rarity = kinds.first(where: { $0.id == kindId })?.rarity ?? .normal
+
         node.removeAllActions()
         let pop = SKAction.scale(to: 1.6, duration: 0.12)
         let fade = SKAction.fadeOut(withDuration: 0.25)
         node.run(SKAction.sequence([SKAction.group([pop, fade]), .removeFromParent()]))
+
+        spawnBurst(at: position, rarity: rarity)
+    }
+
+    private func spawnBurst(at position: CGPoint, rarity: Rarity) {
+        let count: Int
+        let radius: CGFloat
+        let distance: CGFloat
+        let colors: [SKColor]
+
+        switch rarity {
+        case .normal:
+            count = 6
+            radius = 4
+            distance = 60
+            colors = [.white]
+        case .rare:
+            count = 14
+            radius = 5
+            distance = 90
+            colors = [.yellow, .white, .orange]
+        case .superRare:
+            count = 28
+            radius = 6
+            distance = 130
+            colors = [
+                SKColor.systemRed, SKColor.systemOrange, SKColor.systemYellow,
+                SKColor.systemGreen, SKColor.systemTeal, SKColor.systemBlue,
+                SKColor.systemPurple, SKColor.systemPink
+            ]
+        }
+
+        for i in 0..<count {
+            let dot = SKShapeNode(circleOfRadius: radius)
+            dot.fillColor = colors.randomElement() ?? .white
+            dot.strokeColor = .clear
+            dot.position = position
+            dot.zPosition = 10
+            addChild(dot)
+
+            let baseAngle = CGFloat(i) / CGFloat(count) * .pi * 2
+            let jitter = CGFloat.random(in: -0.3...0.3)
+            let angle = baseAngle + jitter
+            let dist = distance * CGFloat.random(in: 0.7...1.2)
+            let dx = cos(angle) * dist
+            let dy = sin(angle) * dist
+
+            let move = SKAction.moveBy(x: dx, y: dy, duration: 0.7)
+            move.timingMode = .easeOut
+            let fade = SKAction.fadeOut(withDuration: 0.7)
+            let scale = SKAction.scale(to: 0.2, duration: 0.7)
+
+            dot.run(SKAction.sequence([
+                SKAction.group([move, fade, scale]),
+                .removeFromParent()
+            ]))
+        }
     }
 }

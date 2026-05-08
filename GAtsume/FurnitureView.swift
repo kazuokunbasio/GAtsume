@@ -157,9 +157,17 @@ private struct WallpaperRow: View {
         } label: {
             HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(swatchColor)
-                        .frame(width: 50, height: 50)
+                    if let bgName = item.bgImage, let ui = UIImage(named: bgName) {
+                        Image(uiImage: ui)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 50, height: 50)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(swatchColor)
+                            .frame(width: 50, height: 50)
+                    }
                     Text(item.emoji)
                         .font(.title2)
                 }

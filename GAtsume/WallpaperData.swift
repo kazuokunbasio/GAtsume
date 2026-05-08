@@ -7,4 +7,5 @@ struct WallpaperKind: Codable, Identifiable, Hashable {
     let price: Int
     let bgColor: [Double]
     let floorColor: [Double]
+    let bgImage: String?
 }

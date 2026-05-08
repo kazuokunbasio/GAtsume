@@ -5,32 +5,36 @@
       "name": "ふつうの部屋",
       "emoji": "🏠",
       "price": 0,
-      "bgColor": [0.20, 0.18, 0.20],
-      "floorColor": [0.30, 0.23, 0.18]
+      "bgColor": [0.32, 0.27, 0.22],
+      "floorColor": [0.45, 0.32, 0.20],
+      "bgImage": "wall_default"
     },
     {
       "id": "wood",
       "name": "古民家",
       "emoji": "🪵",
       "price": 100,
-      "bgColor": [0.18, 0.12, 0.08],
-      "floorColor": [0.40, 0.28, 0.18]
+      "bgColor": [0.28, 0.18, 0.12],
+      "floorColor": [0.55, 0.36, 0.22],
+      "bgImage": "wall_wood"
     },
     {
       "id": "neon",
       "name": "ネオン街",
       "emoji": "🌆",
       "price": 200,
-      "bgColor": [0.06, 0.06, 0.18],
-      "floorColor": [0.20, 0.05, 0.30]
+      "bgColor": [0.08, 0.05, 0.25],
+      "floorColor": [0.42, 0.10, 0.55],
+      "bgImage": "wall_neon"
     },
     {
       "id": "forest",
       "name": "森のなか",
       "emoji": "🌲",
       "price": 250,
-      "bgColor": [0.06, 0.14, 0.10],
-      "floorColor": [0.16, 0.24, 0.14]
+      "bgColor": [0.10, 0.25, 0.16],
+      "floorColor": [0.28, 0.42, 0.20],
+      "bgImage": "wall_forest"
     }
   ]
 }
