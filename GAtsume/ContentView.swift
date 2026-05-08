@@ -10,13 +10,23 @@ struct ContentView: View {
     @Query private var lastVisits: [LastVisit]
     @Query private var ownerships: [FurnitureOwnership]
     @Query private var dailyLogins: [DailyLogin]
+    @Query private var wallpaperOwnerships: [WallpaperOwnership]
+    @Query private var allMissions: [DailyMission]
 
     @State private var summary: OfflineCatchSummary?
+
+    private var claimableCount: Int {
+        let today = DailyKey.today()
+        return allMissions.filter {
+            $0.dateKey == today && !$0.claimed && $0.progress >= $0.target
+        }.count
+    }
 
     var body: some View {
         TabView {
             HomeView()
                 .tabItem { Label("ホーム", systemImage: "house") }
+                .badge(claimableCount)
             RoomView()
                 .tabItem { Label("部屋", systemImage: "bed.double.fill") }
             FurnitureView()
@@ -58,6 +68,9 @@ struct ContentView: View {
         }
         if dailyLogins.isEmpty {
             modelContext.insert(DailyLogin())
+        }
+        if !wallpaperOwnerships.contains(where: { $0.wallpaperId == "default" }) {
+            modelContext.insert(WallpaperOwnership(wallpaperId: "default"))
         }
     }
 
@@ -133,6 +146,7 @@ struct ContentView: View {
             BaitInventory.self,
             ActiveBait.self,
             DailyLogin.self,
-            DailyMission.self
+            DailyMission.self,
+            WallpaperOwnership.self
         ], inMemory: true)
 }

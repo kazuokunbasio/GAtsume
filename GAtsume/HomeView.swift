@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Charts
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
@@ -7,6 +8,11 @@ struct HomeView: View {
     @Query private var wallets: [Wallet]
     @Query private var dailyLogins: [DailyLogin]
     @Query(sort: \DailyMission.kind) private var todayMissions: [DailyMission]
+    @State private var showActivityLog = false
+    @State private var showTimeline = false
+    @AppStorage("homeShowChart") private var homeShowChart = true
+    @AppStorage("homeShowAchievements") private var homeShowAchievements = true
+    @AppStorage("homeShowActivity") private var homeShowActivity = true
     private let allKinds = GokiLoader.loadAll()
 
     private var todayMissionsFiltered: [DailyMission] {
@@ -60,6 +66,20 @@ struct HomeView: View {
         return (kind, last.caughtAt)
     }
 
+    private var last7Days: [DayCount] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        return (0..<7).reversed().compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else {
+                return nil
+            }
+            let count = sightings.filter {
+                calendar.isDate($0.caughtAt, inSameDayAs: date)
+            }.count
+            return DayCount(date: date, count: count)
+        }
+    }
+
     private var achievementCtx: AchievementContext {
         AchievementContext(sightings: sightings, allKinds: allKinds)
     }
@@ -69,6 +89,9 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     coinHero
+                    if let title = Titles.currentTitle(achievementCtx) {
+                        titleBadge(title)
+                    }
                     if let login = dailyLogins.first, login.lastClaimDate == DailyKey.today() {
                         loginBanner(streak: login.streak)
                     }
@@ -76,15 +99,113 @@ struct HomeView: View {
                         missionsSection
                     }
                     statsGrid
+                    if homeShowChart {
+                        weeklyChart
+                    }
+                    if homeShowActivity {
+                        recentActivity
+                    }
                     if let last = lastCatch {
                         lastCatchCard(kind: last.kind, at: last.at)
                     }
                     progressBar
-                    achievementsSection
+                    if homeShowAchievements {
+                        achievementsSection
+                    }
+                    timelineButton
                 }
                 .padding()
             }
             .navigationTitle("ゴキあつめ")
+            .sheet(isPresented: $showActivityLog) {
+                ActivityLogView()
+            }
+            .sheet(isPresented: $showTimeline) {
+                DiscoveryTimelineView()
+            }
+        }
+    }
+
+    private var timelineButton: some View {
+        Button {
+            showTimeline = true
+        } label: {
+            HStack {
+                Image(systemName: "calendar")
+                Text("発見年表を見る")
+                    .font(.subheadline.bold())
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+    }
+
+    private func titleBadge(_ title: GameTitle) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: title.icon)
+                .foregroundStyle(.purple)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("称号")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(title.name)
+                    .font(.headline)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.purple.opacity(0.1), in: .rect(cornerRadius: 12))
+    }
+
+    private var recentActivity: some View {
+        let recent = sightings
+            .sorted { $0.caughtAt > $1.caughtAt }
+            .prefix(5)
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("最近の活動")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if !sightings.isEmpty {
+                    Button("もっと見る") { showActivityLog = true }
+                        .font(.caption.bold())
+                }
+            }
+            if recent.isEmpty {
+                Text("まだ何も捕まえていない。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 16)
+            } else {
+                ForEach(Array(recent), id: \.id) { record in
+                    if let kind = allKinds.first(where: { $0.id == record.gokiId }) {
+                        recentRow(kind: kind, at: record.caughtAt)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+    }
+
+    private func recentRow(kind: GokiKind, at: Date) -> some View {
+        HStack(spacing: 10) {
+            GokiVisual(kind: kind, size: 32)
+            Text(kind.name)
+                .font(.subheadline)
+            Spacer()
+            Text(at.formatted(.relative(presentation: .named)))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -126,6 +247,44 @@ struct HomeView: View {
         mission.claimed = true
         wallets.first?.coins += mission.rewardCoins
         Sounds.purchase()
+    }
+
+    private var weeklyChart: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("過去7日の捕獲")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                let total = last7Days.reduce(0) { $0 + $1.count }
+                Text("計 \(total) 匹")
+                    .font(.caption.bold().monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Chart(last7Days) { day in
+                BarMark(
+                    x: .value("日", day.date, unit: .day),
+                    y: .value("匹", day.count)
+                )
+                .foregroundStyle(.yellow.gradient)
+                .cornerRadius(4)
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day)) { value in
+                    AxisValueLabel(format: .dateTime.day().locale(.init(identifier: "ja_JP")))
+                        .font(.caption2)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading) { _ in
+                    AxisGridLine()
+                    AxisValueLabel().font(.caption2)
+                }
+            }
+            .frame(height: 140)
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
     }
 
     private var achievementsSection: some View {
@@ -222,6 +381,12 @@ struct HomeView: View {
         .padding()
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
     }
+}
+
+private struct DayCount: Identifiable {
+    let id = UUID()
+    let date: Date
+    let count: Int
 }
 
 private struct MissionRow: View {

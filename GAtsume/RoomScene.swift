@@ -1,20 +1,29 @@
 import SpriteKit
 
+struct PlacedFurnitureInfo: Equatable {
+    let furnitureId: String
+    let positionFraction: CGPoint?
+}
+
 final class RoomScene: SKScene {
     var onCatch: ((String) -> Void)?
+    var onFurnitureMoved: ((String, CGPoint) -> Void)?
     var kinds: [GokiKind] = []
     var furniture: [FurnitureKind] = []
-    var placedFurnitureIds: [String] = []
+    var placedFurniture: [PlacedFurnitureInfo] = []
     var activeBait: BaitKind?
+    var wallpaper: WallpaperKind?
 
     private var spawnTimer: Timer?
     private let spawnInterval: TimeInterval = 4.0
     private let floorHeight: CGFloat = 140
+    private weak var floorNode: SKShapeNode?
+    private weak var draggingNode: SKNode?
 
     override func didMove(to view: SKView) {
-        applyTimeBasedBackground()
         scaleMode = .resizeFill
         addFloor()
+        applyWallpaper()
         refreshFurniture()
         startSpawning()
     }
@@ -24,12 +33,26 @@ final class RoomScene: SKScene {
         spawnTimer = nil
     }
 
-    private func applyTimeBasedBackground() {
+    func applyWallpaper() {
         let hour = Calendar.current.component(.hour, from: .now)
         let isNight = hour >= 18 || hour < 6
-        backgroundColor = isNight
-            ? SKColor(red: 0.10, green: 0.10, blue: 0.16, alpha: 1.0)
-            : SKColor(red: 0.20, green: 0.18, blue: 0.20, alpha: 1.0)
+        let darken: Double = isNight ? 0.65 : 1.0
+
+        let bg = wallpaper?.bgColor ?? [0.20, 0.18, 0.20]
+        let fl = wallpaper?.floorColor ?? [0.30, 0.23, 0.18]
+
+        backgroundColor = SKColor(
+            red: CGFloat(bg[0] * darken),
+            green: CGFloat(bg[1] * darken),
+            blue: CGFloat(bg[2] * darken),
+            alpha: 1.0
+        )
+        floorNode?.fillColor = SKColor(
+            red: CGFloat(fl[0] * darken),
+            green: CGFloat(fl[1] * darken),
+            blue: CGFloat(fl[2] * darken),
+            alpha: 1.0
+        )
     }
 
     private func addFloor() {
@@ -40,6 +63,7 @@ final class RoomScene: SKScene {
         floor.zPosition = -1
         floor.name = "_floor"
         addChild(floor)
+        self.floorNode = floor
 
         let line = SKShapeNode(rectOf: CGSize(width: size.width * 1.4, height: 2))
         line.fillColor = SKColor.white.withAlphaComponent(0.18)
@@ -55,14 +79,29 @@ final class RoomScene: SKScene {
             child.removeFromParent()
         }
 
-        let placed = furniture.filter { placedFurnitureIds.contains($0.id) }
-        guard !placed.isEmpty else { return }
+        guard !placedFurniture.isEmpty else { return }
 
-        let spacing = size.width / CGFloat(placed.count + 1)
-        for (idx, item) in placed.enumerated() {
+        let autoSpacing = size.width / CGFloat(placedFurniture.count + 1)
+
+        for (idx, info) in placedFurniture.enumerated() {
+            guard let item = furniture.first(where: { $0.id == info.furnitureId }) else { continue }
+
+            let position: CGPoint
+            if let frac = info.positionFraction {
+                position = CGPoint(
+                    x: size.width * CGFloat(frac.x),
+                    y: size.height * CGFloat(frac.y)
+                )
+            } else {
+                position = CGPoint(
+                    x: autoSpacing * CGFloat(idx + 1),
+                    y: floorHeight * 0.62
+                )
+            }
+
             let container = SKNode()
             container.name = "_fur_\(item.id)"
-            container.position = CGPoint(x: spacing * CGFloat(idx + 1), y: floorHeight * 0.62)
+            container.position = position
             container.zPosition = -0.5
 
             let emoji = SKLabelNode(text: item.emoji)
@@ -95,7 +134,7 @@ final class RoomScene: SKScene {
         guard let kind = Spawner.pick(
             from: kinds,
             furniture: furniture,
-            activeFurnitureIds: placedFurnitureIds,
+            activeFurnitureIds: placedFurniture.map(\.furnitureId),
             activeBait: activeBait
         ) else { return }
 
@@ -140,15 +179,66 @@ final class RoomScene: SKScene {
         }
     }
 
+    private func furnitureContainer(at location: CGPoint) -> SKNode? {
+        for node in nodes(at: location) {
+            var current: SKNode? = node
+            while let n = current {
+                if let name = n.name, name.hasPrefix("_fur_") {
+                    return n
+                }
+                current = n.parent
+            }
+        }
+        return nil
+    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
+
+        if let furnitureNode = furnitureContainer(at: location) {
+            draggingNode = furnitureNode
+            furnitureNode.run(SKAction.scale(to: 1.1, duration: 0.1))
+            return
+        }
+
         for node in nodes(at: location) {
             guard let id = node.name, !id.hasPrefix("_") else { continue }
             onCatch?(id)
             catchAnimation(node: node)
             return
         }
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, let node = draggingNode else { return }
+        let location = touch.location(in: self)
+        let clampedX = max(40, min(size.width - 40, location.x))
+        let clampedY = max(20, min(size.height - 100, location.y))
+        node.position = CGPoint(x: clampedX, y: clampedY)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        finishDragging()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        finishDragging()
+    }
+
+    private func finishDragging() {
+        guard let node = draggingNode, let name = node.name, name.hasPrefix("_fur_") else {
+            draggingNode = nil
+            return
+        }
+        node.run(SKAction.scale(to: 1.0, duration: 0.1))
+        let id = String(name.dropFirst("_fur_".count))
+        let frac = CGPoint(
+            x: node.position.x / size.width,
+            y: node.position.y / size.height
+        )
+        onFurnitureMoved?(id, frac)
+        draggingNode = nil
     }
 
     private func catchAnimation(node: SKNode) {

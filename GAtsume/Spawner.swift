@@ -8,7 +8,7 @@ enum Spawner {
         activeBait: BaitKind? = nil,
         now: Date = .now
     ) -> GokiKind? {
-        let eligible = kinds.filter { $0.passesTimeFilter(now: now) }
+        let eligible = kinds.filter { $0.isAvailable(now: now) }
         guard !eligible.isEmpty else { return nil }
         let weighted = eligible.map { kind -> (GokiKind, Double) in
             (kind, weight(

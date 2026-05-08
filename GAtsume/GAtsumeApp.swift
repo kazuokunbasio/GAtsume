@@ -15,7 +15,8 @@ struct GAtsumeApp: App {
             BaitInventory.self,
             ActiveBait.self,
             DailyLogin.self,
-            DailyMission.self
+            DailyMission.self,
+            WallpaperOwnership.self
         ])
     }
 }

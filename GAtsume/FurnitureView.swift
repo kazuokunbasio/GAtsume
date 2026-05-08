@@ -7,9 +7,16 @@ struct FurnitureView: View {
     @Query private var wallets: [Wallet]
     @Query private var inventories: [BaitInventory]
     @Query private var activeBaits: [ActiveBait]
+    @Query private var wallpaperOwnerships: [WallpaperOwnership]
+    @AppStorage("selectedWallpaperId") private var selectedWallpaperId = "default"
 
     private let furnitureKinds = FurnitureLoader.loadAll()
     private let baitKinds = BaitLoader.loadAll()
+    private let wallpaperKinds = WallpaperLoader.loadAll()
+
+    private var ownedWallpaperIds: Set<String> {
+        Set(wallpaperOwnerships.map(\.wallpaperId))
+    }
 
     private var ownershipMap: [String: FurnitureOwnership] {
         Dictionary(uniqueKeysWithValues: ownerships.map { ($0.furnitureId, $0) })
@@ -61,6 +68,24 @@ struct FurnitureView: View {
                     Text("エサは時間限定でゴキを引き寄せる。同時に効くのは1種類だけ。")
                         .font(.caption)
                 }
+
+                Section {
+                    ForEach(wallpaperKinds) { item in
+                        WallpaperRow(
+                            item: item,
+                            isOwned: ownedWallpaperIds.contains(item.id),
+                            isSelected: selectedWallpaperId == item.id,
+                            canAfford: coins >= item.price,
+                            onBuy: { buyWallpaper(item) },
+                            onSelect: { selectedWallpaperId = item.id }
+                        )
+                    }
+                } header: {
+                    Text("壁紙")
+                } footer: {
+                    Text("購入した壁紙はタップで切り替え可能。部屋の見た目が変わる。")
+                        .font(.caption)
+                }
             }
             .navigationTitle("家具・エサ")
             .toolbar {
@@ -105,6 +130,75 @@ struct FurnitureView: View {
         modelContext.insert(ActiveBait(baitId: item.id, expiresAt: expires))
         Sounds.purchase()
         DailyMissions.record(.useBait, modelContext: modelContext)
+    }
+
+    private func buyWallpaper(_ item: WallpaperKind) {
+        guard !ownedWallpaperIds.contains(item.id) else { return }
+        if item.price > 0 {
+            guard let wallet, wallet.coins >= item.price else { return }
+            wallet.coins -= item.price
+        }
+        modelContext.insert(WallpaperOwnership(wallpaperId: item.id))
+        Sounds.purchase()
+    }
+}
+
+private struct WallpaperRow: View {
+    let item: WallpaperKind
+    let isOwned: Bool
+    let isSelected: Bool
+    let canAfford: Bool
+    let onBuy: () -> Void
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button {
+            if isOwned { onSelect() } else if canAfford { onBuy() }
+        } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(swatchColor)
+                        .frame(width: 50, height: 50)
+                    Text(item.emoji)
+                        .font(.title2)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.name).font(.headline)
+                    Text(isOwned ? "購入済み" : "未購入")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if isOwned {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(isSelected ? .green : .secondary)
+                        .font(.title2)
+                } else {
+                    HStack(spacing: 3) {
+                        Image(systemName: "circle.hexagongrid.fill")
+                            .foregroundStyle(.yellow)
+                            .font(.caption2)
+                        Text("\(item.price)")
+                            .font(.caption.bold().monospacedDigit())
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(canAfford ? Color.yellow.opacity(0.85) : Color.gray.opacity(0.25), in: .capsule)
+                    .foregroundStyle(canAfford ? .black : .secondary)
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isOwned && !canAfford)
+    }
+
+    private var swatchColor: Color {
+        Color(red: item.bgColor[0], green: item.bgColor[1], blue: item.bgColor[2])
     }
 }
 

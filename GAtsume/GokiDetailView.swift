@@ -6,6 +6,8 @@ struct GokiDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var sightings: [SightingRecord]
 
+    @State private var renderedShareImage: Image?
+
     private var matching: [SightingRecord] {
         sightings
             .filter { $0.gokiId == kind.id }
@@ -20,8 +22,7 @@ struct GokiDetailView: View {
                         .padding(.top, 16)
 
                     VStack(spacing: 8) {
-                        Text(kind.name)
-                            .font(.title.bold())
+                        Text(kind.name).font(.title.bold())
                         rarityBadge
                     }
 
@@ -33,6 +34,9 @@ struct GokiDetailView: View {
 
                     VStack(spacing: 10) {
                         DetailRow(label: "好物", value: kind.favoriteFood)
+                        if let season = kind.seasonLabel {
+                            DetailRow(label: "出現", value: season)
+                        }
                         DetailRow(label: "捕獲数", value: "\(matching.count) 匹")
                         if let first = matching.first {
                             DetailRow(label: "初回", value: format(first.caughtAt))
@@ -49,23 +53,93 @@ struct GokiDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    ShareLink(item: shareText) {
-                        Image(systemName: "square.and.arrow.up")
+                    if let img = renderedShareImage {
+                        ShareLink(
+                            item: img,
+                            preview: SharePreview(kind.name, image: img)
+                        ) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    } else {
+                        ProgressView().scaleEffect(0.7)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("閉じる") { dismiss() }
                 }
             }
+            .task { renderShareImage() }
         }
     }
 
-    private var shareText: String {
-        """
-        \(kind.name) (\(kind.rarity.label)) を捕まえた！
-        \(kind.description)
-        #ゴキあつめ
-        """
+    @MainActor
+    private func renderShareImage() {
+        let renderer = ImageRenderer(content: shareCard)
+        renderer.scale = 3
+        if let ui = renderer.uiImage {
+            renderedShareImage = Image(uiImage: ui)
+        }
+    }
+
+    private var shareCard: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Text("FIRST CAUGHT")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let first = matching.first {
+                    Text(first.caughtAt.formatted(.dateTime.year().month().day().hour().minute()))
+                        .font(.system(size: 10, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 18)
+
+            GokiVisual(kind: kind, size: 200)
+                .padding(.top, 4)
+
+            VStack(spacing: 6) {
+                Text(kind.name)
+                    .font(.system(size: 32, weight: .bold))
+                Text(kind.rarity.label)
+                    .font(.caption.bold())
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(rarityColor.opacity(0.18), in: .capsule)
+                    .foregroundStyle(rarityColor)
+            }
+
+            Text(kind.description)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 14) {
+                HStack(spacing: 4) {
+                    Text("好物").font(.caption).foregroundStyle(.secondary)
+                    Text(kind.favoriteFood).font(.caption.bold())
+                }
+                if matching.count > 1 {
+                    HStack(spacing: 4) {
+                        Text("捕獲数").font(.caption).foregroundStyle(.secondary)
+                        Text("\(matching.count)匹").font(.caption.bold().monospacedDigit())
+                    }
+                }
+            }
+
+            Spacer()
+
+            Text("#ゴキあつめ")
+                .font(.footnote.bold())
+                .foregroundStyle(.secondary)
+                .padding(.bottom, 16)
+        }
+        .frame(width: 480, height: 600)
+        .background(Color(.systemBackground))
+        .foregroundStyle(.primary)
     }
 
     private var rarityBadge: some View {

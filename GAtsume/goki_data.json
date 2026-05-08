@@ -9,7 +9,8 @@
       "spawnWeight": 5.0,
       "emoji": "🫘",
       "imageName": "goki_kuromame",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
     },
     {
       "id": "chabane",
@@ -20,7 +21,8 @@
       "spawnWeight": 4.0,
       "emoji": "🟤",
       "imageName": "goki_chabane",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
     },
     {
       "id": "kitchen_runner",
@@ -31,7 +33,8 @@
       "spawnWeight": 1.0,
       "emoji": "🐛",
       "imageName": "goki_kitchen_runner",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
     },
     {
       "id": "uchu_g",
@@ -42,7 +45,8 @@
       "spawnWeight": 0.3,
       "emoji": "🟣",
       "imageName": "goki_uchu",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
     },
     {
       "id": "mori_g",
@@ -53,7 +57,8 @@
       "spawnWeight": 0.3,
       "emoji": "🟢",
       "imageName": "goki_mori",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
     },
     {
       "id": "kogane_g",
@@ -64,7 +69,8 @@
       "spawnWeight": 0.2,
       "emoji": "🟡",
       "imageName": "goki_kogane",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
     },
     {
       "id": "yoru_g",
@@ -75,7 +81,8 @@
       "spawnWeight": 1.5,
       "emoji": "🌙",
       "imageName": "goki_yoru",
-      "period": "night"
+      "period": "night",
+      "availableMonths": null
     },
     {
       "id": "king_g",
@@ -86,7 +93,56 @@
       "spawnWeight": 0.05,
       "emoji": "👑",
       "imageName": "goki_king",
-      "period": "any"
+      "period": "any",
+      "availableMonths": null
+    },
+    {
+      "id": "sakura_g",
+      "name": "桜G",
+      "rarity": "rare",
+      "description": "春の風と一緒に現れる。淡いピンク色をしている。",
+      "favoriteFood": "桜餅",
+      "spawnWeight": 1.2,
+      "emoji": "🌸",
+      "imageName": "goki_sakura",
+      "period": "any",
+      "availableMonths": [3, 4, 5]
+    },
+    {
+      "id": "natsu_g",
+      "name": "夏祭りG",
+      "rarity": "rare",
+      "description": "屋台の匂いに集まる。祭囃子に合わせて動く。",
+      "favoriteFood": "焼きとうもろこし",
+      "spawnWeight": 1.2,
+      "emoji": "🎆",
+      "imageName": "goki_natsu",
+      "period": "any",
+      "availableMonths": [7, 8]
+    },
+    {
+      "id": "halloween_g",
+      "name": "ハロウィンG",
+      "rarity": "rare",
+      "description": "10月にだけ現れる。仮装してることが多い。",
+      "favoriteFood": "キャンディ",
+      "spawnWeight": 1.5,
+      "emoji": "🎃",
+      "imageName": "goki_halloween",
+      "period": "any",
+      "availableMonths": [10]
+    },
+    {
+      "id": "yuki_g",
+      "name": "雪G",
+      "rarity": "rare",
+      "description": "寒くなると現れる白いゴキ。手を出すと冷たい。",
+      "favoriteFood": "氷",
+      "spawnWeight": 1.2,
+      "emoji": "❄️",
+      "imageName": "goki_yuki",
+      "period": "any",
+      "availableMonths": [12, 1, 2]
     }
   ]
 }

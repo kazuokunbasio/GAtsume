@@ -24,6 +24,7 @@ struct GokiKind: Codable, Identifiable, Hashable {
     let emoji: String
     let imageName: String?
     let period: String?
+    let availableMonths: [Int]?
 
     func passesTimeFilter(now: Date = .now) -> Bool {
         let p = period ?? "any"
@@ -35,5 +36,25 @@ struct GokiKind: Codable, Identifiable, Hashable {
         case "day": return !isNight
         default: return true
         }
+    }
+
+    func passesSeasonFilter(now: Date = .now) -> Bool {
+        guard let months = availableMonths, !months.isEmpty else { return true }
+        let month = Calendar.current.component(.month, from: now)
+        return months.contains(month)
+    }
+
+    func isAvailable(now: Date = .now) -> Bool {
+        passesTimeFilter(now: now) && passesSeasonFilter(now: now)
+    }
+
+    var seasonLabel: String? {
+        guard let months = availableMonths, !months.isEmpty else { return nil }
+        let s = Set(months)
+        if s == [3, 4, 5] { return "春限定" }
+        if s == [6, 7, 8] || s == [7, 8] { return "夏限定" }
+        if s == [9, 10, 11] || s == [10] { return "秋限定" }
+        if s == [12, 1, 2] { return "冬限定" }
+        return "期間限定"
     }
 }

@@ -3,6 +3,7 @@ import SwiftData
 
 struct SettingsView: View {
     @AppStorage("soundEnabled") private var soundEnabled = true
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = false
     @Environment(\.modelContext) private var modelContext
     @Query private var sightings: [SightingRecord]
     @Query private var ownerships: [FurnitureOwnership]
@@ -12,16 +13,29 @@ struct SettingsView: View {
     @Query private var lastVisits: [LastVisit]
     @Query private var dailyLogins: [DailyLogin]
     @Query private var dailyMissions: [DailyMission]
+    @Query private var wallpaperOwnerships: [WallpaperOwnership]
+    @AppStorage("selectedWallpaperId") private var selectedWallpaperId = "default"
+    @AppStorage("homeShowChart") private var homeShowChart = true
+    @AppStorage("homeShowAchievements") private var homeShowAchievements = true
+    @AppStorage("homeShowActivity") private var homeShowActivity = true
 
     @State private var showResetConfirm = false
     @State private var showRestoreAlert = false
     @State private var showRemoveAdsAlert = false
+    @State private var exportURL: URL?
 
     var body: some View {
         NavigationStack {
             List {
                 Section("音") {
                     Toggle("効果音", isOn: $soundEnabled)
+                }
+
+                Section("通知") {
+                    Toggle("毎日19時にリマインド", isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) { _, on in
+                            Task { await handleNotificationToggle(on) }
+                        }
                 }
 
                 Section("購入") {
@@ -51,7 +65,24 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("ホーム表示") {
+                    Toggle("過去7日のチャート", isOn: $homeShowChart)
+                    Toggle("最近の活動", isOn: $homeShowActivity)
+                    Toggle("達成バッジ", isOn: $homeShowAchievements)
+                }
+
                 Section("データ") {
+                    if let url = exportURL {
+                        ShareLink(item: url) {
+                            Label("エクスポートを共有", systemImage: "square.and.arrow.up")
+                        }
+                    } else {
+                        Button {
+                            exportURL = generateExport()
+                        } label: {
+                            Label("データをエクスポート", systemImage: "tray.and.arrow.up")
+                        }
+                    }
                     Button(role: .destructive) {
                         showResetConfirm = true
                     } label: {
@@ -94,6 +125,64 @@ struct SettingsView: View {
         }
     }
 
+    @MainActor
+    private func handleNotificationToggle(_ on: Bool) async {
+        if on {
+            let granted = await Notifications.requestPermission()
+            if granted {
+                Notifications.scheduleDaily()
+            } else {
+                notificationsEnabled = false
+            }
+        } else {
+            Notifications.cancelDaily()
+        }
+    }
+
+    private func generateExport() -> URL? {
+        struct ExportSighting: Codable {
+            let gokiId: String
+            let caughtAt: Date
+        }
+        struct ExportPayload: Codable {
+            let exportedAt: Date
+            let totalCatches: Int
+            let uniqueKinds: Int
+            let coins: Int
+            let streak: Int
+            let sightings: [ExportSighting]
+        }
+
+        let payload = ExportPayload(
+            exportedAt: .now,
+            totalCatches: sightings.count,
+            uniqueKinds: Set(sightings.map(\.gokiId)).count,
+            coins: wallets.first?.coins ?? 0,
+            streak: dailyLogins.first?.streak ?? 0,
+            sightings: sightings
+                .sorted { $0.caughtAt < $1.caughtAt }
+                .map { ExportSighting(gokiId: $0.gokiId, caughtAt: $0.caughtAt) }
+        )
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+
+        guard let data = try? encoder.encode(payload) else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        formatter.locale = .init(identifier: "en_US_POSIX")
+        let filename = "gatsume_export_\(formatter.string(from: .now)).json"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        do {
+            try data.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
+    }
+
     private func resetAll() {
         for s in sightings { modelContext.delete(s) }
         for o in ownerships { modelContext.delete(o) }
@@ -103,8 +192,11 @@ struct SettingsView: View {
         for v in lastVisits { modelContext.delete(v) }
         for l in dailyLogins { modelContext.delete(l) }
         for m in dailyMissions { modelContext.delete(m) }
+        for w in wallpaperOwnerships { modelContext.delete(w) }
+        selectedWallpaperId = "default"
         modelContext.insert(Wallet(coins: 100))
         modelContext.insert(LastVisit())
         modelContext.insert(DailyLogin())
+        modelContext.insert(WallpaperOwnership(wallpaperId: "default"))
     }
 }

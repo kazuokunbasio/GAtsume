@@ -8,18 +8,54 @@ struct RoomView: View {
     private var activeFurniture: [FurnitureOwnership]
     @Query private var wallets: [Wallet]
     @Query private var activeBaits: [ActiveBait]
+    @AppStorage("selectedWallpaperId") private var selectedWallpaperId = "default"
 
     @State private var scene = RoomScene()
     @State private var lastCaught: GokiKind?
     @State private var lastReward: Int = 0
     @State private var now: Date = .now
+    @State private var combo: Int = 0
+    @State private var comboExpiresAt: Date?
+
+    private let comboWindow: TimeInterval = 3.0
+
+    private var comboActive: Bool {
+        guard let expires = comboExpiresAt else { return false }
+        return combo > 1 && expires > now
+    }
+
+    private func multiplier(forCombo combo: Int) -> Double {
+        switch combo {
+        case ..<2: return 1.0
+        case 2: return 1.5
+        case 3: return 2.0
+        default: return 3.0
+        }
+    }
 
     private let allKinds = GokiLoader.loadAll()
     private let allFurniture = FurnitureLoader.loadAll()
     private let allBaits = BaitLoader.loadAll()
+    private let allWallpapers = WallpaperLoader.loadAll()
+
+    private var selectedWallpaper: WallpaperKind? {
+        allWallpapers.first { $0.id == selectedWallpaperId }
+            ?? allWallpapers.first
+    }
 
     private var activeIds: [String] {
         activeFurniture.map(\.furnitureId)
+    }
+    private var placedInfo: [PlacedFurnitureInfo] {
+        activeFurniture.map { ownership in
+            let frac: CGPoint?
+            if let x = ownership.positionXFraction, let y = ownership.positionYFraction {
+                frac = CGPoint(x: x, y: y)
+            } else {
+                frac = nil
+            }
+            return PlacedFurnitureInfo(furnitureId: ownership.furnitureId, positionFraction: frac)
+        }
     }
     private var wallet: Wallet? { wallets.first }
 
@@ -53,24 +89,39 @@ struct RoomView: View {
                     .padding(.top, 60)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
+
+            if comboActive {
+                ComboBadge(combo: combo)
+                    .padding(.top, 110)
+                    .transition(.scale.combined(with: .opacity))
+            }
         }
         .onAppear {
             scene.scaleMode = .resizeFill
             scene.kinds = allKinds
             scene.furniture = allFurniture
-            scene.placedFurnitureIds = activeIds
+            scene.placedFurniture = placedInfo
             scene.activeBait = activeBaitKind
+            scene.wallpaper = selectedWallpaper
             scene.refreshFurniture()
+            scene.applyWallpaper()
             scene.onCatch = { id in
                 handleCatch(id)
             }
+            scene.onFurnitureMoved = { id, frac in
+                handleFurnitureMove(id: id, fraction: frac)
+            }
         }
-        .onChange(of: activeIds) { _, newIds in
-            scene.placedFurnitureIds = newIds
+        .onChange(of: placedInfo) { _, newInfo in
+            scene.placedFurniture = newInfo
             scene.refreshFurniture()
         }
         .onChange(of: activeBaitKind) { _, newBait in
             scene.activeBait = newBait
+        }
+        .onChange(of: selectedWallpaperId) { _, _ in
+            scene.wallpaper = selectedWallpaper
+            scene.applyWallpaper()
         }
         .task {
             while !Task.isCancelled {
@@ -85,8 +136,19 @@ struct RoomView: View {
         modelContext.insert(record)
 
         guard let kind = allKinds.first(where: { $0.id == id }) else { return }
-        let reward = Spawner.coinReward(for: kind.rarity)
+
+        let nowDate = Date.now
+        if let expires = comboExpiresAt, expires > nowDate {
+            combo += 1
+        } else {
+            combo = 1
+        }
+        comboExpiresAt = nowDate.addingTimeInterval(comboWindow)
+
+        let baseReward = Spawner.coinReward(for: kind.rarity)
+        let reward = Int(Double(baseReward) * multiplier(forCombo: combo))
         wallet?.coins += reward
+
         switch kind.rarity {
         case .normal: Sounds.catchNormal()
         case .rare: Sounds.catchRare()
@@ -95,6 +157,13 @@ struct RoomView: View {
         DailyMissions.record(.catchGoki(kind.rarity), modelContext: modelContext)
         DailyMissions.record(.earnCoins(reward), modelContext: modelContext)
         showToast(kind, reward: reward)
+    }
+
+    private func handleFurnitureMove(id: String, fraction: CGPoint) {
+        if let ownership = activeFurniture.first(where: { $0.furnitureId == id }) {
+            ownership.positionXFraction = fraction.x
+            ownership.positionYFraction = fraction.y
+        }
     }
 
     private func showToast(_ kind: GokiKind, reward: Int) {
@@ -132,6 +201,32 @@ private struct CatchToast: View {
         .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
         .shadow(radius: 4, y: 2)
+    }
+}
+
+private struct ComboBadge: View {
+    let combo: Int
+
+    private var color: Color {
+        switch combo {
+        case 2: return .yellow
+        case 3: return .orange
+        default: return .red
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "flame.fill")
+                .font(.callout)
+            Text("Combo ×\(combo)")
+                .font(.title3.bold().monospacedDigit())
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(color, in: .capsule)
+        .shadow(color: color.opacity(0.4), radius: 8)
     }
 }
 
