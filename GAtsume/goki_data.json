@@ -7,7 +7,9 @@
       "description": "暗所を好む。実はクラシック音楽が好き。",
       "favoriteFood": "黒糖",
       "spawnWeight": 5.0,
-      "emoji": "🫘"
+      "emoji": "🫘",
+      "imageName": "goki_kuromame",
+      "period": "any"
     },
     {
       "id": "chabane",
@@ -16,7 +18,9 @@
       "description": "明るい場所が苦手。歌うとよく出てくる。",
       "favoriteFood": "パンくず",
       "spawnWeight": 4.0,
-      "emoji": "🟤"
+      "emoji": "🟤",
+      "imageName": "goki_chabane",
+      "period": "any"
     },
     {
       "id": "kitchen_runner",
@@ -25,7 +29,9 @@
       "description": "走るのが得意。世界陸上に出るのが夢。",
       "favoriteFood": "オリーブオイル",
       "spawnWeight": 1.0,
-      "emoji": "🐛"
+      "emoji": "🐛",
+      "imageName": "goki_kitchen_runner",
+      "period": "any"
     },
     {
       "id": "uchu_g",
@@ -34,7 +40,9 @@
       "description": "電波の隙間から現れる。Wi-Fiが好物。",
       "favoriteFood": "電波",
       "spawnWeight": 0.3,
-      "emoji": "🟣"
+      "emoji": "🟣",
+      "imageName": "goki_uchu",
+      "period": "any"
     },
     {
       "id": "mori_g",
@@ -43,7 +51,42 @@
       "description": "湿った場所が好き。落ち葉を主食にしている。",
       "favoriteFood": "落ち葉",
       "spawnWeight": 0.3,
-      "emoji": "🟢"
+      "emoji": "🟢",
+      "imageName": "goki_mori",
+      "period": "any"
+    },
+    {
+      "id": "kogane_g",
+      "name": "黄金G",
+      "rarity": "rare",
+      "description": "発酵した匂いに引き寄せられる。鈍く光る。",
+      "favoriteFood": "ぬか床",
+      "spawnWeight": 0.2,
+      "emoji": "🟡",
+      "imageName": "goki_kogane",
+      "period": "any"
+    },
+    {
+      "id": "yoru_g",
+      "name": "夜のG",
+      "rarity": "rare",
+      "description": "夜にしか現れない。瞳が三日月の形をしている。",
+      "favoriteFood": "月光",
+      "spawnWeight": 1.5,
+      "emoji": "🌙",
+      "imageName": "goki_yoru",
+      "period": "night"
+    },
+    {
+      "id": "king_g",
+      "name": "王様G",
+      "rarity": "super_rare",
+      "description": "ごく稀に出現する。家臣を従えていることがある。",
+      "favoriteFood": "勅命",
+      "spawnWeight": 0.05,
+      "emoji": "👑",
+      "imageName": "goki_king",
+      "period": "any"
     }
   ]
 }

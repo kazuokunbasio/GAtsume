@@ -22,4 +22,18 @@ struct GokiKind: Codable, Identifiable, Hashable {
     let favoriteFood: String
     let spawnWeight: Double
     let emoji: String
+    let imageName: String?
+    let period: String?
+
+    func passesTimeFilter(now: Date = .now) -> Bool {
+        let p = period ?? "any"
+        if p == "any" { return true }
+        let hour = Calendar.current.component(.hour, from: now)
+        let isNight = hour >= 18 || hour < 6
+        switch p {
+        case "night": return isNight
+        case "day": return !isNight
+        default: return true
+        }
+    }
 }

@@ -1,0 +1,50 @@
+{
+  "bait": [
+    {
+      "id": "kokutou",
+      "name": "黒糖",
+      "emoji": "🍯",
+      "description": "5分間ノーマル系を強く呼ぶ。",
+      "price": 15,
+      "durationSec": 300,
+      "boosts": {
+        "kuromame": 8.0,
+        "chabane": 4.0
+      }
+    },
+    {
+      "id": "panqzu",
+      "name": "パンくず",
+      "emoji": "🍞",
+      "description": "5分間 森林系のおやつ。",
+      "price": 25,
+      "durationSec": 300,
+      "boosts": {
+        "mori_g": 6.0,
+        "kitchen_runner": 3.0
+      }
+    },
+    {
+      "id": "denpa",
+      "name": "謎の電波",
+      "emoji": "📡",
+      "description": "10分間サイバー系を引き寄せる。",
+      "price": 40,
+      "durationSec": 600,
+      "boosts": {
+        "uchu_g": 8.0
+      }
+    },
+    {
+      "id": "nukadoko",
+      "name": "ぬか床",
+      "emoji": "🧆",
+      "description": "10分間貴重種のごちそう。",
+      "price": 80,
+      "durationSec": 600,
+      "boosts": {
+        "kogane_g": 12.0
+      }
+    }
+  ]
+}

@@ -1,22 +1,25 @@
 {
   "furniture": [
     {
+      "id": "trash_bag",
+      "name": "ゴミ袋",
+      "emoji": "🗑️",
+      "description": "ノーマル系の温床。安いが効果は地味。",
+      "price": 20,
+      "boosts": {
+        "kuromame": 2.0,
+        "chabane": 2.0
+      }
+    },
+    {
       "id": "old_fridge",
       "name": "古い冷蔵庫",
       "emoji": "🧊",
       "description": "ノーマル系が集まりやすい。",
+      "price": 40,
       "boosts": {
         "kuromame": 3.0,
         "chabane": 3.0
-      }
-    },
-    {
-      "id": "neon_light",
-      "name": "ネオンライト",
-      "emoji": "💡",
-      "description": "サイバー系を呼び寄せる。",
-      "boosts": {
-        "uchu_g": 5.0
       }
     },
     {
@@ -24,9 +27,42 @@
       "name": "木箱",
       "emoji": "📦",
       "description": "森林系の隠れ家になる。",
+      "price": 60,
       "boosts": {
         "mori_g": 5.0,
         "kitchen_runner": 1.5
+      }
+    },
+    {
+      "id": "humidifier",
+      "name": "加湿器",
+      "emoji": "💨",
+      "description": "湿気を好むゴキを呼ぶ。",
+      "price": 70,
+      "boosts": {
+        "mori_g": 3.0,
+        "chabane": 1.5
+      }
+    },
+    {
+      "id": "neon_light",
+      "name": "ネオンライト",
+      "emoji": "💡",
+      "description": "サイバー系を呼び寄せる。",
+      "price": 100,
+      "boosts": {
+        "uchu_g": 5.0
+      }
+    },
+    {
+      "id": "fermented",
+      "name": "発酵食品",
+      "emoji": "🧀",
+      "description": "稀少種を引き寄せる謎の食品。",
+      "price": 150,
+      "boosts": {
+        "kogane_g": 6.0,
+        "kuromame": 2.0
       }
     }
   ]

@@ -7,6 +7,15 @@ struct GAtsumeApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: [SightingRecord.self, PlacedFurniture.self])
+        .modelContainer(for: [
+            SightingRecord.self,
+            FurnitureOwnership.self,
+            Wallet.self,
+            LastVisit.self,
+            BaitInventory.self,
+            ActiveBait.self,
+            DailyLogin.self,
+            DailyMission.self
+        ])
     }
 }
