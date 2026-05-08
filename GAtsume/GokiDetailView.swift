@@ -9,8 +9,15 @@ struct GokiDetailView: View {
 
     @State private var renderedShareImage: Image?
 
+    private let allKinds = GokiLoader.loadAll()
+
     private var isFavorite: Bool {
         Favorites.parse(favoriteGokiCSV).contains(kind.id)
+    }
+
+    private var currentTitle: GameTitle? {
+        let ctx = AchievementContext(sightings: sightings, allKinds: allKinds)
+        return Titles.currentTitle(ctx)
     }
 
     private func toggleFavorite() {
@@ -147,10 +154,20 @@ struct GokiDetailView: View {
 
             Spacer()
 
-            Text("#ゴキあつめ")
-                .font(.footnote.bold())
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 16)
+            VStack(spacing: 6) {
+                if let title = currentTitle {
+                    HStack(spacing: 4) {
+                        Image(systemName: title.icon)
+                        Text(title.name)
+                    }
+                    .font(.caption.bold())
+                    .foregroundStyle(.purple)
+                }
+                Text("#ゴキあつめ")
+                    .font(.footnote.bold())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 16)
         }
         .frame(width: 480, height: 600)
         .background(Color(.systemBackground))

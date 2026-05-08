@@ -14,6 +14,7 @@ struct ContentView: View {
     @Query private var allMissions: [DailyMission]
 
     @State private var summary: OfflineCatchSummary?
+    @State private var streakMilestone: StreakMilestone?
 
     private var claimableCount: Int {
         let today = DailyKey.today()
@@ -54,6 +55,9 @@ struct ContentView: View {
         .sheet(item: $summary) { s in
             OfflineCatchSummaryView(summary: s)
         }
+        .sheet(item: $streakMilestone) { m in
+            StreakCelebrationView(milestone: m)
+        }
         .fullScreenCover(isPresented: .constant(!onboardingShown)) {
             OnboardingView()
         }
@@ -89,11 +93,30 @@ struct ContentView: View {
         guard login.lastClaimDate != today else { return }
 
         let yesterday = DailyKey.yesterday()
+        let oldStreak = login.streak
         login.streak = login.lastClaimDate == yesterday ? login.streak + 1 : 1
         login.lastClaimDate = today
 
         let bonus = DailyLoginBonus.bonusFor(streak: login.streak)
         wallets.first?.coins += bonus
+
+        let milestoneDays = [3, 7, 14, 30, 100]
+        if milestoneDays.contains(login.streak), login.streak > oldStreak {
+            let extra = streakMilestoneBonus(login.streak)
+            wallets.first?.coins += extra
+            streakMilestone = StreakMilestone(days: login.streak, bonusCoins: extra)
+        }
+    }
+
+    private func streakMilestoneBonus(_ days: Int) -> Int {
+        switch days {
+        case 3: return 30
+        case 7: return 100
+        case 14: return 200
+        case 30: return 500
+        case 100: return 2000
+        default: return 0
+        }
     }
 
     private func simulateOffline(elapsed: TimeInterval) {
