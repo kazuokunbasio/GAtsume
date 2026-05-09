@@ -33,13 +33,17 @@ struct ContentView: View {
         ZStack(alignment: .top) {
             TabView {
                 HomeView()
+                    .withBanner()
                     .tabItem { Label("ホーム", systemImage: "house") }
                     .badge(claimableCount)
                 RoomView()
+                    .withBanner()
                     .tabItem { Label("部屋", systemImage: "bed.double.fill") }
                 FurnitureView()
+                    .withBanner()
                     .tabItem { Label("家具", systemImage: "shippingbox.fill") }
                 CollectionView()
+                    .withBanner()
                     .tabItem { Label("図鑑", systemImage: "book.fill") }
                 SettingsView()
                     .tabItem { Label("設定", systemImage: "gearshape.fill") }

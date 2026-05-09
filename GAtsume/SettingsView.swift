@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 
 struct SettingsView: View {
     @AppStorage("soundEnabled") private var soundEnabled = true
@@ -22,10 +23,9 @@ struct SettingsView: View {
     @AppStorage("homeShowActivity") private var homeShowActivity = true
 
     @State private var showResetConfirm = false
-    @State private var showRestoreAlert = false
-    @State private var showRemoveAdsAlert = false
     @State private var showPrivacy = false
     @State private var exportURL: URL?
+    @ObservedObject private var purchaseManager = PurchaseManager.shared
 
     var body: some View {
         NavigationStack {
@@ -58,28 +58,15 @@ struct SettingsView: View {
                 }
 
                 Section("購入") {
+                    purchaseRow
+
                     Button {
-                        showRemoveAdsAlert = true
+                        Task { await purchaseManager.restore() }
                     } label: {
                         HStack {
-                            Label("広告削除", systemImage: "rectangle.slash")
+                            Label("購入を復元", systemImage: "arrow.clockwise")
                                 .foregroundStyle(.primary)
                             Spacer()
-                            Text("近日対応")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Button {
-                        showRestoreAlert = true
-                    } label: {
-                        HStack {
-                            Label("購入の復元", systemImage: "arrow.clockwise")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Text("近日対応")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -137,18 +124,111 @@ struct SettingsView: View {
             } message: {
                 Text("捕獲記録・購入家具・コインがすべて消えます。")
             }
-            .alert("近日対応", isPresented: $showRestoreAlert) {
+            .alert(
+                "エラー",
+                isPresented: Binding(
+                    get: { purchaseManager.actionErrorMessage != nil },
+                    set: { if !$0 { purchaseManager.actionErrorMessage = nil } }
+                ),
+                presenting: purchaseManager.actionErrorMessage
+            ) { _ in
                 Button("OK", role: .cancel) {}
-            } message: {
-                Text("App内課金は次のアップデートで対応予定です。")
-            }
-            .alert("近日対応", isPresented: $showRemoveAdsAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("広告削除は次のアップデートで対応予定です。")
+            } message: { message in
+                Text(message)
             }
             .sheet(isPresented: $showPrivacy) {
                 PrivacyPolicyView()
+            }
+            .task {
+                if purchaseManager.products.isEmpty {
+                    await purchaseManager.bootstrap()
+                }
+            }
+        }
+    }
+
+    // MARK: - 購入セクション (3 状態)
+
+    @ViewBuilder
+    private var purchaseRow: some View {
+        if purchaseManager.hasRemovedAds {
+            purchasedRow
+        } else if let product = purchaseManager.removeAdsProduct {
+            purchaseAvailableRow(product: product)
+        } else {
+            purchaseUnavailableRow
+        }
+    }
+
+    private var purchasedRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(.green)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("広告削除済み")
+                    .font(.body)
+                Text("ありがとうございます")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+    }
+
+    private func purchaseAvailableRow(product: Product) -> some View {
+        Button {
+            Task { await purchaseManager.purchaseRemoveAds() }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "rectangle.slash")
+                    .foregroundStyle(.primary)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("広告を削除")
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                    Text("バナー広告を永久に非表示")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if purchaseManager.isPurchasing {
+                    ProgressView()
+                } else {
+                    Text(product.displayPrice)
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(.primary)
+                }
+            }
+        }
+        .disabled(purchaseManager.isPurchasing)
+    }
+
+    private var purchaseUnavailableRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "rectangle.slash")
+                .foregroundStyle(.primary)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("広告を削除")
+                    .font(.body)
+                Text(purchaseManager.isLoadingProducts
+                     ? "価格を取得中…"
+                     : "価格を取得できませんでした")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer()
+            if purchaseManager.isLoadingProducts {
+                ProgressView()
+            } else {
+                Button("再読み込み") {
+                    Task { await purchaseManager.reloadProducts() }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
     }

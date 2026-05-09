@@ -3,9 +3,14 @@ import SwiftData
 
 @main
 struct GAtsumeApp: App {
+    init() {
+        AdsBootstrap.startIfNeeded()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task { await PurchaseManager.shared.bootstrap() }
         }
         .modelContainer(for: [
             SightingRecord.self,
