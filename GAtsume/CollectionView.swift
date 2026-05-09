@@ -47,6 +47,7 @@ struct CollectionView: View {
     @State private var caughtFilter: CaughtFilter = .all
     @State private var sortMode: SortMode = .standard
     @State private var favoritesOnly = false
+    @State private var searchText = ""
     private let kinds = GokiLoader.loadAll()
 
     private var caughtCounts: [String: Int] {
@@ -76,7 +77,13 @@ struct CollectionView: View {
                 }
             }()
             let passesFav = !favoritesOnly || favoriteIds.contains(kind.id)
-            return passesRarity && passesCaught && passesFav
+            let passesSearch: Bool = {
+                if searchText.isEmpty { return true }
+                return kind.name.localizedCaseInsensitiveContains(searchText)
+                    || kind.description.localizedCaseInsensitiveContains(searchText)
+                    || kind.favoriteFood.localizedCaseInsensitiveContains(searchText)
+            }()
+            return passesRarity && passesCaught && passesFav && passesSearch
         }
         switch sortMode {
         case .standard: break
@@ -122,6 +129,7 @@ struct CollectionView: View {
                 .padding()
             }
             .navigationTitle("図鑑")
+            .searchable(text: $searchText, prompt: "ゴキを検索")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {

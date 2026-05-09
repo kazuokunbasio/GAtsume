@@ -10,6 +10,7 @@ struct HomeView: View {
     @Query(sort: \DailyMission.kind) private var todayMissions: [DailyMission]
     @State private var showActivityLog = false
     @State private var showTimeline = false
+    @State private var showAchievementDetail = false
     @AppStorage("homeShowChart") private var homeShowChart = true
     @AppStorage("homeShowAchievements") private var homeShowAchievements = true
     @AppStorage("homeShowActivity") private var homeShowActivity = true
@@ -89,6 +90,9 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     coinHero
+                    if totalCatches == 0 {
+                        welcomeCard
+                    }
                     if let title = Titles.currentTitle(achievementCtx) {
                         titleBadge(title)
                     }
@@ -102,6 +106,8 @@ struct HomeView: View {
                         missionsSection
                     }
                     statsGrid
+                    rarityBreakdownCard
+                    tipOfDayCard
                     if homeShowChart {
                         weeklyChart
                     }
@@ -126,6 +132,12 @@ struct HomeView: View {
             .sheet(isPresented: $showTimeline) {
                 DiscoveryTimelineView()
             }
+            .sheet(isPresented: $showAchievementDetail) {
+                AchievementDetailView()
+            }
+            .refreshable {
+                DailyMissions.ensureToday(modelContext: modelContext)
+            }
         }
     }
 
@@ -146,6 +158,30 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
+    }
+
+    private var welcomeCard: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "hand.tap.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(.yellow)
+                .symbolEffect(.pulse, options: .repeat(.continuous))
+
+            Text("ようこそ")
+                .font(.title2.bold())
+
+            Text("「部屋」タブでゴキをタップして\n捕まえてみよう")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.vertical, 22)
+        .frame(maxWidth: .infinity)
+        .background(.yellow.opacity(0.1), in: .rect(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(.yellow.opacity(0.4), lineWidth: 1)
+        )
     }
 
     private var seasonalKinds: [GokiKind] {
@@ -189,12 +225,88 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
                 Text(title.name)
                     .font(.headline)
+                if let next = nextTitle(after: title) {
+                    Text("次: \(next.name)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(.purple.opacity(0.1), in: .rect(cornerRadius: 12))
+    }
+
+    private func nextTitle(after current: GameTitle) -> GameTitle? {
+        Titles.all
+            .filter { $0.priority > current.priority }
+            .min(by: { $0.priority < $1.priority })
+    }
+
+    private var rarityBreakdownCard: some View {
+        let breakdown = rarityCounts
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("レア度別")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                rarityBox(label: "ノーマル", count: breakdown.normal, color: .gray)
+                rarityBox(label: "レア", count: breakdown.rare, color: .blue)
+                rarityBox(label: "超レア", count: breakdown.superRare, color: .purple)
+            }
+        }
+        .padding()
+        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+    }
+
+    private func rarityBox(label: String, count: Int, color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text("\(count)")
+                .font(.title2.bold().monospacedDigit())
+                .contentTransition(.numericText(countsDown: false))
+                .animation(.snappy, value: count)
+                .foregroundStyle(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(color.opacity(0.08), in: .rect(cornerRadius: 10))
+    }
+
+    private var rarityCounts: (normal: Int, rare: Int, superRare: Int) {
+        var n = 0, r = 0, s = 0
+        for sighting in sightings {
+            guard let kind = allKinds.first(where: { $0.id == sighting.gokiId }) else { continue }
+            switch kind.rarity {
+            case .normal: n += 1
+            case .rare: r += 1
+            case .superRare: s += 1
+            }
+        }
+        return (n, r, s)
+    }
+
+    private var tipOfDayCard: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "lightbulb.fill")
+                .foregroundStyle(.yellow)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("今日のひとこと")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(DailyTips.todaysTip())
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(.yellow.opacity(0.08), in: .rect(cornerRadius: 12))
     }
 
     private var recentActivity: some View {
@@ -321,41 +433,69 @@ struct HomeView: View {
     }
 
     private var achievementsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("達成バッジ")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                let unlocked = Achievements.all.filter { $0.check(achievementCtx) }.count
-                Text("\(unlocked)/\(Achievements.all.count)")
-                    .font(.caption.bold().monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 90), spacing: 10)],
-                spacing: 10
-            ) {
-                ForEach(Achievements.all) { ach in
-                    AchievementBadge(
-                        achievement: ach,
-                        unlocked: ach.check(achievementCtx)
-                    )
+        Button {
+            showAchievementDetail = true
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("達成バッジ")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    let unlocked = Achievements.all.filter { $0.check(achievementCtx) }.count
+                    Text("\(unlocked)/\(Achievements.all.count)")
+                        .font(.caption.bold().monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 90), spacing: 10)],
+                    spacing: 10
+                ) {
+                    ForEach(Achievements.all) { ach in
+                        AchievementBadge(
+                            achievement: ach,
+                            unlocked: ach.check(achievementCtx)
+                        )
+                    }
                 }
             }
+            .padding()
+            .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
         }
-        .padding()
-        .background(.ultraThinMaterial, in: .rect(cornerRadius: 14))
+        .buttonStyle(.plain)
     }
 
     private var coinHero: some View {
-        HStack(spacing: 10) {
+        let coins = wallets.first?.coins ?? 0
+        let streak = dailyLogins.first?.streak ?? 0
+        return HStack(spacing: 10) {
             Image(systemName: "circle.hexagongrid.fill")
                 .foregroundStyle(.yellow)
                 .font(.system(size: 32))
-            Text("\(wallets.first?.coins ?? 0)")
+            Text("\(coins)")
                 .font(.system(size: 40, weight: .bold).monospacedDigit())
+                .contentTransition(.numericText(countsDown: false))
+                .animation(.snappy, value: coins)
             Spacer()
+            if streak > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(.orange)
+                    Text("\(streak)")
+                        .font(.title3.bold().monospacedDigit())
+                        .contentTransition(.numericText(countsDown: false))
+                        .animation(.snappy, value: streak)
+                    Text("日")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.orange.opacity(0.15), in: .capsule)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 18)

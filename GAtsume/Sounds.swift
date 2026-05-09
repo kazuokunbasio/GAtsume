@@ -36,17 +36,28 @@ enum Sounds {
 
     static func catchNormal() {
         play(systemId: 1104, customFile: "catch")
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.7)
     }
 
     static func catchRare() {
         play(systemId: 1336, customFile: "catch_rare")
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        let gen = UIImpactFeedbackGenerator(style: .medium)
+        gen.prepare()
+        gen.impactOccurred()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            gen.impactOccurred(intensity: 0.7)
+        }
     }
 
     static func catchSuperRare() {
         play(systemId: 1336, customFile: "catch_super")
         UINotificationFeedbackGenerator().notificationOccurred(.success)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
     }
 
     static func purchase() {

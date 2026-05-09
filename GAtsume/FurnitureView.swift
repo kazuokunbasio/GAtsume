@@ -219,6 +219,8 @@ struct CoinBadge: View {
                 .foregroundStyle(.yellow)
             Text("\(coins)")
                 .font(.subheadline.monospacedDigit().weight(.semibold))
+                .contentTransition(.numericText(countsDown: false))
+                .animation(.snappy, value: coins)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 5)

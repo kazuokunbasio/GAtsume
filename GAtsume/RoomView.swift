@@ -8,6 +8,7 @@ struct RoomView: View {
     private var activeFurniture: [FurnitureOwnership]
     @Query private var wallets: [Wallet]
     @Query private var activeBaits: [ActiveBait]
+    @Query private var sightings: [SightingRecord]
     @AppStorage("selectedWallpaperId") private var selectedWallpaperId = "default"
 
     @State private var scene = RoomScene()
@@ -17,12 +18,20 @@ struct RoomView: View {
     @State private var combo: Int = 0
     @State private var comboExpiresAt: Date?
     @State private var flashColor: Color?
+    @State private var screenShakeOffset: CGSize = .zero
+    @State private var showSuperRareBanner = false
 
     private let comboWindow: TimeInterval = 3.0
 
     private var comboActive: Bool {
         guard let expires = comboExpiresAt else { return false }
         return combo > 1 && expires > now
+    }
+
+    private var comboProgress: Double {
+        guard let expires = comboExpiresAt else { return 0 }
+        let remaining = expires.timeIntervalSince(now)
+        return max(0, min(1, remaining / comboWindow))
     }
 
     private func multiplier(forCombo combo: Int) -> Double {
@@ -46,6 +55,15 @@ struct RoomView: View {
 
     private var activeIds: [String] {
         activeFurniture.map(\.furnitureId)
+    }
+
+    private var paintingEmoji: String {
+        let counts = Dictionary(grouping: sightings, by: \.gokiId).mapValues(\.count)
+        guard let topId = counts.max(by: { $0.value < $1.value })?.key,
+              let kind = allKinds.first(where: { $0.id == topId }) else {
+            return "🫘"
+        }
+        return kind.emoji
     }
     private var placedInfo: [PlacedFurnitureInfo] {
         activeFurniture.map { ownership in
@@ -73,6 +91,7 @@ struct RoomView: View {
         ZStack(alignment: .top) {
             SpriteView(scene: scene)
                 .ignoresSafeArea(edges: .top)
+                .offset(screenShakeOffset)
 
             if let color = flashColor {
                 Rectangle()
@@ -81,15 +100,15 @@ struct RoomView: View {
                     .allowsHitTesting(false)
             }
 
-            HStack {
+            HStack(spacing: 8) {
+                TimeBadge(now: now)
                 if let bait = activeBaitKind, let expiresAt = activeBaitExpiresAt {
                     BaitHUD(bait: bait, expiresAt: expiresAt, now: now)
-                        .padding(.leading, 16)
                 }
                 Spacer()
                 CoinBadge(coins: wallet?.coins ?? 0)
-                    .padding(.trailing, 16)
             }
+            .padding(.horizontal, 16)
             .padding(.top, 8)
 
             if let kind = lastCaught {
@@ -99,9 +118,41 @@ struct RoomView: View {
             }
 
             if comboActive {
-                ComboBadge(combo: combo)
+                ComboBadge(combo: combo, progress: comboProgress)
                     .padding(.top, 110)
                     .transition(.scale.combined(with: .opacity))
+            }
+
+            if showSuperRareBanner {
+                Text("SUPER RARE!")
+                    .font(.system(size: 56, weight: .black))
+                    .foregroundStyle(LinearGradient(
+                        colors: [.pink, .yellow, .cyan, .purple],
+                        startPoint: .leading, endPoint: .trailing
+                    ))
+                    .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
+                    .padding(.top, 200)
+                    .transition(.scale(scale: 0.3).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
+
+            if sightings.isEmpty {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 8) {
+                        Image(systemName: "hand.tap.fill")
+                            .symbolEffect(.pulse, options: .repeat(.continuous))
+                        Text("動いてるゴキをタップしてみよう")
+                            .font(.subheadline.bold())
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.black.opacity(0.5), in: .capsule)
+                    .padding(.bottom, 40)
+                }
+                .allowsHitTesting(false)
+                .transition(.opacity)
             }
         }
         .onAppear {
@@ -111,6 +162,7 @@ struct RoomView: View {
             scene.placedFurniture = placedInfo
             scene.activeBait = activeBaitKind
             scene.wallpaper = selectedWallpaper
+            scene.paintingEmoji = paintingEmoji
             scene.refreshFurniture()
             scene.applyWallpaper()
             scene.onCatch = { id in
@@ -119,6 +171,9 @@ struct RoomView: View {
             scene.onFurnitureMoved = { id, frac in
                 handleFurnitureMove(id: id, fraction: frac)
             }
+        }
+        .onChange(of: paintingEmoji) { _, newValue in
+            scene.paintingEmoji = newValue
         }
         .onChange(of: placedInfo) { _, newInfo in
             scene.placedFurniture = newInfo
@@ -163,9 +218,28 @@ struct RoomView: View {
         case .superRare: Sounds.catchSuperRare()
         }
         flash(for: kind.rarity)
+        if kind.rarity == .superRare {
+            shakeScreen()
+        }
         DailyMissions.record(.catchGoki(kind.rarity), modelContext: modelContext)
         DailyMissions.record(.earnCoins(reward), modelContext: modelContext)
         showToast(kind, reward: reward)
+    }
+
+    private func shakeScreen() {
+        let pattern: [(CGFloat, Double)] = [
+            (12, 0.05), (-18, 0.07), (16, 0.07),
+            (-14, 0.07), (8, 0.06), (0, 0.05)
+        ]
+        var elapsed: Double = 0
+        for (dx, dur) in pattern {
+            DispatchQueue.main.asyncAfter(deadline: .now() + elapsed) {
+                withAnimation(.easeInOut(duration: dur)) {
+                    screenShakeOffset = CGSize(width: dx, height: 0)
+                }
+            }
+            elapsed += dur
+        }
     }
 
     private func flash(for rarity: Rarity) {
@@ -229,6 +303,7 @@ private struct CatchToast: View {
 
 private struct ComboBadge: View {
     let combo: Int
+    let progress: Double
 
     private var color: Color {
         switch combo {
@@ -239,17 +314,68 @@ private struct ComboBadge: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "flame.fill")
-                .font(.callout)
-            Text("Combo ×\(combo)")
-                .font(.title3.bold().monospacedDigit())
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.callout)
+                Text("Combo ×\(combo)")
+                    .font(.title3.bold().monospacedDigit())
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(color, in: .capsule)
+            .shadow(color: color.opacity(0.4), radius: 8)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(color.opacity(0.3))
+                    .frame(width: 100, height: 3)
+                Capsule()
+                    .fill(color)
+                    .frame(width: 100 * progress, height: 3)
+            }
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(color, in: .capsule)
-        .shadow(color: color.opacity(0.4), radius: 8)
+    }
+}
+
+private struct TimeBadge: View {
+    let now: Date
+
+    private var hour: Int {
+        Calendar.current.component(.hour, from: now)
+    }
+
+    private var isNight: Bool {
+        hour >= 18 || hour < 6
+    }
+
+    private var iconName: String {
+        if hour >= 18 || hour < 5 { return "moon.stars.fill" }
+        if hour < 8 { return "sunrise.fill" }
+        if hour >= 16 { return "sunset.fill" }
+        return "sun.max.fill"
+    }
+
+    private var iconColor: Color {
+        if isNight { return .indigo }
+        if hour < 8 || hour >= 16 { return .orange }
+        return .yellow
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: iconName)
+                .foregroundStyle(iconColor)
+                .font(.callout)
+            Text(String(format: "%02d:%02d",
+                        hour,
+                        Calendar.current.component(.minute, from: now)))
+                .font(.caption.monospacedDigit().weight(.semibold))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(.ultraThinMaterial, in: .capsule)
     }
 }
 

@@ -12,9 +12,15 @@ struct ContentView: View {
     @Query private var dailyLogins: [DailyLogin]
     @Query private var wallpaperOwnerships: [WallpaperOwnership]
     @Query private var allMissions: [DailyMission]
+    @Query private var sightings: [SightingRecord]
+    @AppStorage("seenAchievementIds") private var seenAchievementCSV = ""
 
     @State private var summary: OfflineCatchSummary?
     @State private var streakMilestone: StreakMilestone?
+    @State private var achievementToast: Achievement?
+    @State private var showSplash = true
+
+    private let allKinds = GokiLoader.loadAll()
 
     private var claimableCount: Int {
         let today = DailyKey.today()
@@ -24,33 +30,64 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem { Label("ホーム", systemImage: "house") }
-                .badge(claimableCount)
-            RoomView()
-                .tabItem { Label("部屋", systemImage: "bed.double.fill") }
-            FurnitureView()
-                .tabItem { Label("家具", systemImage: "shippingbox.fill") }
-            CollectionView()
-                .tabItem { Label("図鑑", systemImage: "book.fill") }
-            SettingsView()
-                .tabItem { Label("設定", systemImage: "gearshape.fill") }
+        ZStack(alignment: .top) {
+            TabView {
+                HomeView()
+                    .tabItem { Label("ホーム", systemImage: "house") }
+                    .badge(claimableCount)
+                RoomView()
+                    .tabItem { Label("部屋", systemImage: "bed.double.fill") }
+                FurnitureView()
+                    .tabItem { Label("家具", systemImage: "shippingbox.fill") }
+                CollectionView()
+                    .tabItem { Label("図鑑", systemImage: "book.fill") }
+                SettingsView()
+                    .tabItem { Label("設定", systemImage: "gearshape.fill") }
+            }
+
+            if let ach = achievementToast {
+                AchievementToastView(achievement: ach)
+                    .padding(.top, 4)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(100)
+                    .onTapGesture {
+                        withAnimation(.easeOut) { achievementToast = nil }
+                    }
+            }
+
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+                    .zIndex(200)
+                    .task {
+                        try? await Task.sleep(for: .seconds(1.5))
+                        withAnimation(.easeOut(duration: 0.7)) {
+                            showSplash = false
+                        }
+                    }
+            }
         }
         .task {
             initializeIfNeeded()
             handleVisit()
             DailyMissions.ensureToday(modelContext: modelContext)
             claimDailyLoginIfNeeded()
+            checkAchievements(silent: true)
+            BGM.startIfEnabled()
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .background {
                 lastVisits.first?.at = .now
+                BGM.stop()
             } else if newPhase == .active && oldPhase != .active {
                 handleVisit()
                 DailyMissions.ensureToday(modelContext: modelContext)
                 claimDailyLoginIfNeeded()
+                BGM.startIfEnabled()
             }
+        }
+        .onChange(of: sightings.count) { _, _ in
+            checkAchievements(silent: false)
         }
         .sheet(item: $summary) { s in
             OfflineCatchSummaryView(summary: s)
@@ -106,6 +143,27 @@ struct ContentView: View {
             wallets.first?.coins += extra
             streakMilestone = StreakMilestone(days: login.streak, bonusCoins: extra)
         }
+    }
+
+    private func checkAchievements(silent: Bool) {
+        let ctx = AchievementContext(sightings: sightings, allKinds: allKinds)
+        let unlockedIds = Set(Achievements.all.filter { $0.check(ctx) }.map(\.id))
+        let seen = Set(
+            seenAchievementCSV.split(separator: ",").map(String.init).filter { !$0.isEmpty }
+        )
+        let newIds = unlockedIds.subtracting(seen)
+
+        if !silent,
+           let firstId = Achievements.all.first(where: { newIds.contains($0.id) })?.id,
+           let achievement = Achievements.all.first(where: { $0.id == firstId }) {
+            withAnimation(.spring()) { achievementToast = achievement }
+            Sounds.purchase()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                withAnimation(.easeOut) { achievementToast = nil }
+            }
+        }
+
+        seenAchievementCSV = unlockedIds.sorted().joined(separator: ",")
     }
 
     private func streakMilestoneBonus(_ days: Int) -> Int {

@@ -3,6 +3,8 @@ import SwiftData
 
 struct SettingsView: View {
     @AppStorage("soundEnabled") private var soundEnabled = true
+    @AppStorage("bgmEnabled") private var bgmEnabled = false
+    @AppStorage("bgmVolume") private var bgmVolume: Double = 0.4
     @AppStorage("notificationsEnabled") private var notificationsEnabled = false
     @Environment(\.modelContext) private var modelContext
     @Query private var sightings: [SightingRecord]
@@ -30,6 +32,22 @@ struct SettingsView: View {
             List {
                 Section("音") {
                     Toggle("効果音", isOn: $soundEnabled)
+                    Toggle("BGM", isOn: $bgmEnabled)
+                        .onChange(of: bgmEnabled) { _, on in
+                            BGM.setEnabled(on)
+                        }
+                    if bgmEnabled {
+                        HStack {
+                            Image(systemName: "speaker.wave.1.fill")
+                                .foregroundStyle(.secondary)
+                            Slider(value: $bgmVolume, in: 0...1)
+                                .onChange(of: bgmVolume) { _, v in
+                                    BGM.setVolume(Float(v))
+                                }
+                            Image(systemName: "speaker.wave.3.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section("通知") {
