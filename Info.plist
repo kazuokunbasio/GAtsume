@@ -4,8 +4,6 @@
 <dict>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-2165259899292420~6743804686</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>広告の最適化のために利用します。許可しなくてもアプリは動作します。</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

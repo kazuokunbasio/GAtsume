@@ -47,8 +47,18 @@ struct BannerView: UIViewRepresentable {
         let banner = GADBannerView(adSize: GADAdSizeBanner)
         banner.adUnitID = adUnitID
         banner.rootViewController = Self.topViewController()
-        banner.load(GADRequest())
+        banner.load(Self.nonPersonalizedRequest())
         return banner
+    }
+
+    /// ATT を使わない方針のため、毎リクエストで Non-Personalized Ads (NPA) を明示する。
+    /// "npa": "1" を渡すと AdMob は IDFA を用いない非パーソナライズ広告のみ配信する。
+    private static func nonPersonalizedRequest() -> GADRequest {
+        let extras = GADExtras()
+        extras.additionalParameters = ["npa": "1"]
+        let request = GADRequest()
+        request.register(extras)
+        return request
     }
 
     func updateUIView(_ uiView: GADBannerView, context: Context) {}
