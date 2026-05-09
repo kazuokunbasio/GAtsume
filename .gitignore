@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Xcode build artifacts
+build/
+DerivedData/
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+# NOTE: Package.resolved is intentionally tracked for reproducible builds.
+
+# CocoaPods / Carthage / fastlane (defensive)
+Pods/
+Carthage/Build/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Editor / OS junk
+*.swp
+*~
+*.bak
+*.orig
