@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GAtsume サポート</title>
+  <title>GAtsume（ゴキあつめ）</title>
   <style>
     :root {
       --bg: #faf8f5;
@@ -29,34 +29,28 @@
     }
     header h1 {
       margin: 0;
-      font-size: 2rem;
+      font-size: 1.9rem;
       letter-spacing: 0.02em;
     }
-    header .subtitle {
-      margin-top: 0.5rem;
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
     main {
-      max-width: 720px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: 2rem 1.5rem 3rem;
+      padding: 1.75rem 1.25rem 2.5rem;
     }
     section {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.25rem;
+      padding: 1.25rem 1.4rem;
+      margin-bottom: 1rem;
     }
     section h2 {
-      margin: 0 0 0.75rem;
-      font-size: 1.15rem;
+      margin: 0 0 0.6rem;
+      font-size: 1.1rem;
     }
-    section p {
-      margin: 0.5rem 0;
-      color: var(--fg);
-    }
+    section p { margin: 0.4rem 0; }
+    section ul { padding-left: 1.2rem; margin: 0.4rem 0; }
+    section li { margin: 0.25rem 0; }
     a {
       color: var(--accent);
       text-decoration: none;
@@ -66,55 +60,63 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 0.95rem;
     }
-    ul.faq { padding-left: 1.25rem; margin: 0.5rem 0; }
-    ul.faq li { margin: 0.4rem 0; }
+    .faq-item { margin: 0.9rem 0; }
+    .faq-item .q {
+      font-weight: 600;
+      margin: 0 0 0.2rem;
+    }
+    .faq-item .a {
+      margin: 0;
+      color: var(--fg);
+    }
     footer {
       text-align: center;
       color: var(--muted);
       font-size: 0.85rem;
-      padding: 1.5rem;
+      padding: 1.25rem;
       border-top: 1px solid var(--border);
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>GAtsume</h1>
-    <p class="subtitle">ゴキあつめ — 奇妙な小さな住人を集める放置型コレクションゲーム</p>
+    <h1>GAtsume（ゴキあつめ）</h1>
   </header>
 
   <main>
     <section>
-      <h2>このアプリについて</h2>
-      <p>
-        GAtsume は、部屋にエサや家具を置いてさまざまな「ゴキ」が訪れるのを観察・収集する、
-        SwiftUI 製の放置型コレクションゲームです。
-      </p>
-      <p>
-        ブラックユーモアと奇妙な可愛らしさを併せ持った、毎日眺めたくなる小さな住人たちを集めましょう。
-      </p>
-    </section>
-
-    <section>
-      <h2>サポート / お問い合わせ</h2>
-      <p>不具合報告、ご要望、その他お問い合わせは以下のメールアドレスまでお願いします。</p>
-      <p class="contact"><a href="mailto:kinniku.kin.gin@gmail.com">kinniku.kin.gin@gmail.com</a></p>
-      <p>返信までお時間をいただく場合があります。あらかじめご了承ください。</p>
-    </section>
-
-    <section>
-      <h2>よくある質問</h2>
-      <ul class="faq">
-        <li><strong>広告を消したい:</strong> 設定タブの「広告を削除」から課金で永久に非表示にできます。</li>
-        <li><strong>機種変更時:</strong> 設定 → 「購入を復元」をタップしてください。</li>
-        <li><strong>データを消したい:</strong> 設定 → 「すべてリセット」で端末内のデータが削除されます。</li>
+      <h2>アプリ概要</h2>
+      <ul>
+        <li>放置型コレクションゲーム</li>
+        <li>部屋にエサや家具を置いてゴキを集める</li>
+        <li>ブラックユーモア系のカジュアルゲーム</li>
+        <li>図鑑収集やレア種収集ができる</li>
       </ul>
     </section>
 
     <section>
-      <h2>プライバシーポリシー</h2>
-      <p>本アプリにおける情報の取り扱いは以下のページに記載しています。</p>
-      <p><a href="privacy.html">プライバシーポリシーを読む →</a></p>
+      <h2>サポート</h2>
+      <p>お問い合わせ:</p>
+      <p class="contact"><a href="mailto:kinniku.kin.gin@gmail.com">kinniku.kin.gin@gmail.com</a></p>
+    </section>
+
+    <section>
+      <h2>FAQ</h2>
+      <div class="faq-item">
+        <p class="q">Q. 広告を削除できますか？</p>
+        <p class="a">A. アプリ内購入で永久に広告を削除できます。</p>
+      </div>
+      <div class="faq-item">
+        <p class="q">Q. データは引き継げますか？</p>
+        <p class="a">A. 現在は端末内保存です。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Links</h2>
+      <ul>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+      </ul>
     </section>
   </main>
 
