@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GAtsume（ゴキあつめ）</title>
+  <meta name="description" content="G集め - ゴキブリを集める放置・収集系アプリの公式サイト">
+  <title>G集め | 公式サイト</title>
   <style>
     :root {
       --bg: #faf8f5;
@@ -14,23 +15,29 @@
       --border: #e6e0d6;
     }
     * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
     body {
-      margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-                   "Hiragino Sans", "Yu Gothic UI", sans-serif;
+                   "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif;
       background: var(--bg);
       color: var(--fg);
-      line-height: 1.7;
+      line-height: 1.75;
+      -webkit-text-size-adjust: 100%;
     }
     header {
-      padding: 2.5rem 1.5rem 1.5rem;
+      padding: 3rem 1.5rem 2rem;
       text-align: center;
       border-bottom: 1px solid var(--border);
     }
     header h1 {
-      margin: 0;
-      font-size: 1.9rem;
+      margin: 0 0 0.5rem;
+      font-size: 2rem;
       letter-spacing: 0.02em;
+    }
+    header .tagline {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
     }
     main {
       max-width: 640px;
@@ -41,87 +48,99 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem 1.4rem;
+      padding: 1.4rem 1.4rem;
       margin-bottom: 1rem;
     }
     section h2 {
-      margin: 0 0 0.6rem;
+      margin: 0 0 0.75rem;
       font-size: 1.1rem;
     }
     section p { margin: 0.4rem 0; }
     section ul { padding-left: 1.2rem; margin: 0.4rem 0; }
-    section li { margin: 0.25rem 0; }
-    a {
-      color: var(--accent);
-      text-decoration: none;
-    }
+    section li { margin: 0.3rem 0; }
+    a { color: var(--accent); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .contact {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.95rem;
-    }
-    .faq-item { margin: 0.9rem 0; }
-    .faq-item .q {
-      font-weight: 600;
-      margin: 0 0 0.2rem;
-    }
-    .faq-item .a {
-      margin: 0;
-      color: var(--fg);
+    .status {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #eef5ee;
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      margin-top: 0.6rem;
     }
     footer {
       text-align: center;
       color: var(--muted);
       font-size: 0.85rem;
-      padding: 1.25rem;
+      padding: 1.5rem 1rem 2rem;
       border-top: 1px solid var(--border);
+    }
+    @media (max-width: 480px) {
+      header { padding: 2.25rem 1rem 1.5rem; }
+      header h1 { font-size: 1.6rem; }
+      section { padding: 1.1rem 1.1rem; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>GAtsume（ゴキあつめ）</h1>
+    <h1>G集め</h1>
+    <p class="tagline">ゴキブリを集める放置・収集系アプリ</p>
+    <p class="status">App Storeにて配信予定</p>
   </header>
 
   <main>
     <section>
-      <h2>アプリ概要</h2>
+      <h2>アプリについて</h2>
+      <p>
+        「G集め」は、部屋にエサや家具を置いて
+        さまざまなゴキブリを呼び寄せ、観察・収集していく
+        放置・収集系のカジュアルアプリです。
+      </p>
+      <p>
+        集めたゴキブリは図鑑に記録され、レアな種類との
+        出会いを楽しむことができます。
+      </p>
+    </section>
+
+    <section>
+      <h2>主な特徴</h2>
       <ul>
-        <li>放置型コレクションゲーム</li>
-        <li>部屋にエサや家具を置いてゴキを集める</li>
-        <li>ブラックユーモア系のカジュアルゲーム</li>
-        <li>図鑑収集やレア種収集ができる</li>
+        <li>放置しているだけでゴキブリが集まる気軽さ</li>
+        <li>図鑑コンプリートを目指すコレクション要素</li>
+        <li>エサや家具で部屋をカスタマイズ</li>
+        <li>レア種との出会いを楽しめる確率設計</li>
       </ul>
     </section>
 
     <section>
-      <h2>サポート</h2>
-      <p>お問い合わせ:</p>
-      <p class="contact"><a href="mailto:kinniku.kin.gin@gmail.com">kinniku.kin.gin@gmail.com</a></p>
-    </section>
-
-    <section>
-      <h2>FAQ</h2>
-      <div class="faq-item">
-        <p class="q">Q. 広告を削除できますか？</p>
-        <p class="a">A. アプリ内購入で永久に広告を削除できます。</p>
-      </div>
-      <div class="faq-item">
-        <p class="q">Q. データは引き継げますか？</p>
-        <p class="a">A. 現在は端末内保存です。</p>
-      </div>
-    </section>
-
-    <section>
-      <h2>Links</h2>
+      <h2>動作環境</h2>
       <ul>
-        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li>iOS（iPhone）</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>お問い合わせ</h2>
+      <p>
+        アプリに関するご意見・ご要望は下記までお寄せください。
+      </p>
+      <p>
+        <a href="mailto:kinniku.kin.gin@gmail.com">kinniku.kin.gin@gmail.com</a>
+      </p>
+    </section>
+
+    <section>
+      <h2>関連リンク</h2>
+      <ul>
+        <li><a href="privacy.html">プライバシーポリシー</a></li>
       </ul>
     </section>
   </main>
 
   <footer>
-    &copy; 2026 GAtsume
+    &copy; 2026 G集め
   </footer>
 </body>
 </html>
