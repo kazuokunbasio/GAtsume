@@ -3,7 +3,7 @@ import GoogleMobileAds
 import UIKit
 
 enum AdsConfig {
-    static let productionBannerAdUnitID = "ca-app-pub-2165259899292420/6791906149"
+    static let productionBannerAdUnitID = "ca-app-pub-2165259899292420/1280930298"
 
     // Google公式のテスト用バナーID。シミュレータ/DEBUGビルドで利用。
     // https://developers.google.com/admob/ios/test-ads
@@ -43,27 +43,83 @@ struct BannerView: UIViewRepresentable {
         self.adUnitID = adUnitID
     }
 
+    func makeCoordinator() -> Coordinator {
+        Coordinator(adUnitID: adUnitID)
+    }
+
     func makeUIView(context: Context) -> GADBannerView {
         let banner = GADBannerView(adSize: GADAdSizeBanner)
         banner.adUnitID = adUnitID
         banner.rootViewController = Self.topViewController()
-        banner.load(Self.nonPersonalizedRequest())
+        banner.delegate = context.coordinator
+        context.coordinator.banner = banner
+        context.coordinator.loadAd()
         return banner
     }
 
-    /// ATT を使わない方針のため、毎リクエストで Non-Personalized Ads (NPA) を明示する。
-    /// "npa": "1" を渡すと AdMob は IDFA を用いない非パーソナライズ広告のみ配信する。
-    private static func nonPersonalizedRequest() -> GADRequest {
-        let extras = GADExtras()
-        extras.additionalParameters = ["npa": "1"]
-        let request = GADRequest()
-        request.register(extras)
-        return request
+    func updateUIView(_ uiView: GADBannerView, context: Context) {
+        // rootViewController がまだ用意できていなかった場合のフォールバック
+        if uiView.rootViewController == nil {
+            uiView.rootViewController = Self.topViewController()
+        }
     }
 
-    func updateUIView(_ uiView: GADBannerView, context: Context) {}
+    final class Coordinator: NSObject, GADBannerViewDelegate {
+        let adUnitID: String
+        weak var banner: GADBannerView?
+        private var retryCount = 0
+        private let maxRetries = 3
 
-    private static func topViewController() -> UIViewController? {
+        init(adUnitID: String) {
+            self.adUnitID = adUnitID
+        }
+
+        func loadAd() {
+            guard let banner else { return }
+            if banner.rootViewController == nil {
+                banner.rootViewController = BannerView.topViewController()
+            }
+            banner.load(Self.nonPersonalizedRequest())
+        }
+
+        /// ATT を使わない方針のため、毎リクエストで Non-Personalized Ads (NPA) を明示する。
+        private static func nonPersonalizedRequest() -> GADRequest {
+            let extras = GADExtras()
+            extras.additionalParameters = ["npa": "1"]
+            let request = GADRequest()
+            request.register(extras)
+            return request
+        }
+
+        // MARK: - GADBannerViewDelegate
+
+        func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
+            retryCount = 0
+            print("[AdMob] ✅ Banner loaded. unitID=\(adUnitID) responseID=\(bannerView.responseInfo?.responseIdentifier ?? "nil") network=\(bannerView.responseInfo?.adNetworkInfoArray.first?.adNetworkClassName ?? "nil")")
+        }
+
+        func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
+            let nsError = error as NSError
+            print("[AdMob] ❌ Banner failed. unitID=\(adUnitID) domain=\(nsError.domain) code=\(nsError.code) desc=\(nsError.localizedDescription)")
+            if let info = nsError.userInfo["GADErrorUserInfoKeyResponseInfo"] {
+                print("[AdMob]    responseInfo=\(info)")
+            }
+
+            // ノーフィル等は時間を置いて指数バックオフで再試行
+            guard retryCount < maxRetries else { return }
+            retryCount += 1
+            let delay = pow(2.0, Double(retryCount)) * 5.0 // 10s, 20s, 40s
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.loadAd()
+            }
+        }
+
+        func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
+            print("[AdMob] 👁 Banner impression recorded.")
+        }
+    }
+
+    fileprivate static func topViewController() -> UIViewController? {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first(where: { $0.activationState == .foregroundActive })?
